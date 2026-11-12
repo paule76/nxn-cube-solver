@@ -250,7 +250,8 @@ function renderSizeSwitch() {
 
 function render() {
   view.render(displayed());
-  view.showHint(solution && solution.step < solution.moves.length ? solution.moves[solution.step] : null);
+  // While scrambling, the camera follows the moves instead of the (absent) next hint.
+  if (!scrambling) view.showHint(solution && solution.step < solution.moves.length ? solution.moves[solution.step] : null);
   renderPalette();
   renderSizeSwitch();
   renderSolution();
@@ -325,6 +326,7 @@ async function scramble() {
   } finally {
     scrambling = false;
     setInputButtonsDisabled(false);
+    if (p === puzzle) view.showHint(null); // turn the camera back
   }
 }
 

@@ -1,8 +1,9 @@
 // 3D view: the cube as CSS-3D cubies (any size n). Implements the view interface
 // { render(facelets), showMove(move, direction), showHint(move|null), highlight(index|null) }.
 import { createGeometry, FACE_NORMALS, inLayer, rotation, cssRotate } from '../engine/geometry.js';
+import { DEFAULT_CAMERA, isFaceVisible, nextCameraAction } from '../engine/camera.js';
 
-const DEFAULT_CAMERA = { x: -25, y: -35 };
+const CAMERA_MS = 300;
 const DRAG_THRESHOLD = 5; // px before a press counts as camera drag
 const DEG_PER_PX = 0.5;
 
@@ -86,6 +87,24 @@ export function createCube3dView(container, { n = 2, onStickerClick = () => {} }
     cam.style.transform = `rotateX(${camera.x}deg) rotateY(${camera.y}deg)`;
   }
 
+  /** View to return to after the camera turned towards a hidden face (null: none). */
+  let savedCamera = null;
+
+  /** Moves the camera (animated unless reduced motion). Returns true if it changed. */
+  function moveCamera(target) {
+    if (target.x === camera.x && target.y === camera.y) return false;
+    cam.style.transition = reducedMotion() ? 'none' : `transform ${CAMERA_MS}ms ease-in-out`;
+    Object.assign(camera, target);
+    applyCamera();
+    return true;
+  }
+
+  function followFace(face) {
+    const action = nextCameraAction(savedCamera, { ...camera }, face);
+    savedCamera = action.saved;
+    return moveCamera(action.camera);
+  }
+
   // Camera drag (pointer events). A press only becomes a drag after DRAG_THRESHOLD px,
   // so a plain click still reaches the sticker.
   let press = null;
@@ -106,6 +125,8 @@ export function createCube3dView(container, { n = 2, onStickerClick = () => {} }
     const dy = e.clientY - press.y;
     if (!press.dragging && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
       press.dragging = true;
+      savedCamera = null; // the user takes over the view
+      cam.style.transition = 'none';
       suppressClick = true;
       container.setPointerCapture?.(e.pointerId);
       container.classList.add('dragging');
@@ -198,6 +219,10 @@ export function createCube3dView(container, { n = 2, onStickerClick = () => {} }
       const layer = cubies.filter((c) => inLayer(c.position, move.face, n));
       const target = degrees * direction;
       setLayer(layer, axis, 0, 0);
+      if (!isFaceVisible(move.face, camera) && followFace(move.face) && !reducedMotion()) {
+        await wait(CAMERA_MS);
+        if (stale()) return;
+      }
       if (reducedMotion()) return;
       if (move.turns !== 2 || !countHalfTurns) {
         await turnLayer(layer, axis, target, TURN_MS);
@@ -216,6 +241,7 @@ export function createCube3dView(container, { n = 2, onStickerClick = () => {} }
       }
     },
     showHint(move) {
+      followFace(move ? move.face : null);
       hint.hidden = !move;
       if (!move) return;
       hint.dataset.face = move.face;
@@ -227,6 +253,8 @@ export function createCube3dView(container, { n = 2, onStickerClick = () => {} }
       stickers.forEach((s, i) => s.classList.toggle('highlighted', i === index));
     },
     resetCamera() {
+      savedCamera = null;
+      cam.style.transition = 'none';
       Object.assign(camera, DEFAULT_CAMERA);
       applyCamera();
     },
