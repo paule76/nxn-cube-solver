@@ -56,26 +56,50 @@ const GROUPS = [slotsOf('U', 'D'), slotsOf('F', 'B'), slotsOf('R', 'L')];
 const compress = (mask, group) => group.reduce((v, s, k) => (mask & (1 << s) ? v | (1 << k) : v), 0);
 const expand = (bits, group) => group.reduce((m, s, k) => (bits & (1 << k) ? m | (1 << s) : m), 0);
 const m3Key = (masks) => (compress(masks[0], GROUPS[0]) << 16) | (compress(masks[1], GROUPS[1]) << 8) | compress(masks[2], GROUPS[2]);
-const m3Masks = (key) => [expand((key >> 16) & 255, GROUPS[0]), expand((key >> 8) & 255, GROUPS[1]), expand(key & 255, GROUPS[2])];
+
+/** Step functions over move indices; M3 moves keep every group, so each group gets its own 256-entry table. */
+function maskStepper(moves) {
+  const t = moves.map((m) => MASK_TABLES.get(m));
+  return (mask, i) => {
+    const [t0, t1, t2] = t[i];
+    return (t0[mask & 255] | t1[(mask >>> 8) & 255] | t2[(mask >>> 16) & 255]) >>> 0;
+  };
+}
+function m3Stepper(moves) {
+  const t = moves.map((m) =>
+    GROUPS.map((group) => Uint8Array.from({ length: 256 }, (_, v) => compress(moveMask(expand(v, group), m), group))),
+  );
+  return (key, i) => {
+    const [a, b, c] = t[i];
+    return (a[(key >> 16) & 255] << 16) | (b[(key >> 8) & 255] << 8) | c[key & 255];
+  };
+}
 
 /** Breadth-first distances from `goal` (moves are closed under inverse, so distance to goal = from goal). */
-function bfs(goal, moves, step, store) {
+function bfs(goal, nMoves, step, store) {
   store.set(goal, 0);
-  let frontier = [goal];
+  let frontier = new Int32Array([goal]);
   let depth = 0;
   while (frontier.length) {
-    const next = [];
+    let next = new Int32Array(1024);
+    let n = 0;
     depth++;
-    for (const key of frontier) {
-      for (const m of moves) {
+    for (let i = 0; i < frontier.length; i++) {
+      const key = frontier[i];
+      for (let m = 0; m < nMoves; m++) {
         const k = step(key, m);
         if (store.get(k) === undefined) {
           store.set(k, depth);
-          next.push(k);
+          if (n === next.length) {
+            const grown = new Int32Array(n * 2);
+            grown.set(next);
+            next = grown;
+          }
+          next[n++] = k;
         }
       }
     }
-    frontier = next;
+    frontier = next.subarray(0, n);
   }
   return depth - 1;
 }
@@ -127,13 +151,16 @@ export function createCenterSolver() {
   const d1 = denseStore();
   const d2 = new Map();
   const d3 = new Map();
-  const max1 = bfs(GOAL[1], M1_MOVES, moveMask, d1);
-  const max2 = bfs(GOAL[2], M2_MOVES, moveMask, d2);
-  const max3 = bfs(GOAL[3], M3_MOVES, (key, m) => m3Key(m3Masks(key).map((mask) => moveMask(mask, m))), d3);
+  const step1 = maskStepper(M1_MOVES);
+  const step2 = maskStepper(M2_MOVES);
+  const step3 = m3Stepper(M3_MOVES);
+  const max1 = bfs(GOAL[1], M1_MOVES.length, step1, d1);
+  const max2 = bfs(GOAL[2], M2_MOVES.length, step2, d2);
+  const max3 = bfs(GOAL[3], M3_MOVES.length, step3, d3);
   const stages = {
-    1: { dist: d1, moves: M1_MOVES, step: moveMask },
-    2: { dist: d2, moves: M2_MOVES, step: moveMask },
-    3: { dist: d3, moves: M3_MOVES, step: (key, m) => m3Key(m3Masks(key).map((mask) => moveMask(mask, m))) },
+    1: { dist: d1, moves: M1_MOVES, step: step1 },
+    2: { dist: d2, moves: M2_MOVES, step: step2 },
+    3: { dist: d3, moves: M3_MOVES, step: step3 },
   };
 
   /** Optimal moves for one stage (greedy descent along the distance table). */
@@ -144,9 +171,9 @@ export function createCenterSolver() {
     if (d === undefined) throw new Error(`centre stage ${stage}: state not reachable`);
     const out = [];
     while (d > 0) {
-      const m = moves.find((mv) => dist.get(step(key, mv)) === d - 1);
-      out.push(m);
-      key = step(key, m);
+      const i = moves.findIndex((_, j) => dist.get(step(key, j)) === d - 1);
+      out.push(moves[i]);
+      key = step(key, i);
       d--;
     }
     return out;
