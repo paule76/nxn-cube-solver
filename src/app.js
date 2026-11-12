@@ -177,9 +177,14 @@ async function solve() {
   try {
     if (!solver.isReady) {
       setMessage(puzzle.id === '4x4' ? 'msg.preparing4' : 'msg.preparing3');
-      await solver.whenReady();
+      await withTimeout(solver.whenReady(), PREPARE_TIMEOUT_MS);
       if (!isCurrent()) return;
     }
+  } catch {
+    if (isCurrent()) setMessage('msg.solverFailed', {}, 'error');
+    return;
+  }
+  try {
     markSolverState(solver);
     setMessage('msg.searching');
     const phases = await solver.solve(r.state, facelets);
@@ -191,8 +196,18 @@ async function solve() {
     $('solution').hidden = false;
     render();
   } catch {
-    if (isCurrent()) setMessage('msg.solverFailed', {}, 'error');
+    if (isCurrent()) setMessage('msg.solveFailed', {}, 'error');
   }
+}
+
+/** A worker killed without an error event would otherwise leave "preparing …" forever. */
+const PREPARE_TIMEOUT_MS = 60000;
+function withTimeout(promise, ms) {
+  let timer;
+  const limit = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('timeout')), ms);
+  });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
 }
 
 // --- Navigation and autoplay ------------------------------------------------------
@@ -247,25 +262,37 @@ function navigate(action) {
 function renderSolution() {
   if (!solution) return;
   const { moves, step, marks = [] } = solution;
-  const items = [];
-  moves.forEach((m, i) => {
-    const mark = marks.find((k) => k.start === i);
-    if (mark) {
-      const title = document.createElement('li');
-      title.className = 'phase';
-      title.setAttribute('role', 'presentation');
-      title.textContent = t(`phase.${mark.phase}`);
-      items.push(title);
-    }
+  const moveItem = (m, i) => {
     const li = document.createElement('li');
     li.className = 'move';
     li.textContent = moveToString(m);
     if (i < step) li.classList.add('done');
     if (i === step) li.classList.add('current');
     li.title = describeMove(m, t);
-    items.push(li);
-  });
-  $('moves').replaceChildren(...items);
+    return li;
+  };
+  if (!marks.length) {
+    $('moves').replaceChildren(...moves.map(moveItem));
+  } else {
+    // one list item per phase: heading + its own list of moves
+    $('moves').replaceChildren(
+      ...marks.map((mark, k) => {
+        const end = k + 1 < marks.length ? marks[k + 1].start : moves.length;
+        const group = document.createElement('li');
+        group.className = 'phase-group';
+        const title = document.createElement('h3');
+        title.className = 'phase';
+        title.id = `phase-${k}`;
+        title.textContent = t(`phase.${mark.phase}`);
+        const list = document.createElement('ol');
+        list.className = 'moves';
+        list.setAttribute('aria-labelledby', title.id);
+        for (let i = mark.start; i < end; i++) list.append(moveItem(moves[i], i));
+        group.append(title, list);
+        return group;
+      }),
+    );
+  }
   $('step-text').textContent = stepText(moves, step, t, phaseAt(marks, step));
   $('first').disabled = $('prev').disabled = step === 0;
   $('next').disabled = $('last').disabled = step === moves.length;

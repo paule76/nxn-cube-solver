@@ -151,13 +151,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   display: flex; flex-wrap: wrap; gap: 6px;
   padding: 0; margin: 0 0 12px;
 }
-.moves li.phase {
-  flex-basis: 100%;
-  margin-top: 6px;
+.moves li.phase-group { flex-basis: 100%; }
+.moves .moves { margin: 0; }
+.moves .phase {
+  margin: 6px 0;
+  font-size: 1em;
   font-weight: 600;
   color: var(--muted);
 }
-.moves li.phase:first-child { margin-top: 0; }
+.moves li.phase-group:first-child .phase { margin-top: 0; }
 .moves li.move {
   min-width: 2.6em;
   text-align: center;

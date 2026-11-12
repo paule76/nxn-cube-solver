@@ -123,6 +123,8 @@ export function createEdgePairer() {
       out.push(...best.moves);
       f = best.next;
     }
+    const n = pairedCount(f);
+    if (n < 12) throw new Error(`edge pairing failed (${n}/12 paired)`);
     return out;
   }
 

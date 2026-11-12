@@ -65,6 +65,14 @@ export function createSolverClient(worker) {
         }
         break;
       }
+      case 'error4': {
+        // only the 4x4 preparation failed: reject it and allow a new attempt later
+        const reject = rejectReady4;
+        ready4 = null;
+        isReady4 = false;
+        reject?.(new Error(data.message ?? '4x4 solver error'));
+        break;
+      }
       case 'error':
         if (data.id !== undefined && pending.has(data.id)) {
           pending.get(data.id).reject(new Error(data.message));
@@ -118,8 +126,9 @@ export function createSolverClient(worker) {
       }
       return ready4;
     },
+    /** The pending or finished 4x4 preparation (null before prepare4). */
     get ready4() {
-      return this.prepare4();
+      return ready4;
     },
     solve: (state) => request('solve', { state }),
     solve4: (facelets) => request('solve4', { facelets }),

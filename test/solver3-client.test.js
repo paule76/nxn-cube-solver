@@ -135,3 +135,23 @@ test('solvers: a worker that cannot be created reports failure', async () => {
   await assert.rejects(s3.whenReady());
   await assert.rejects(s3.solve({}));
 });
+
+test('client: a failed 4x4 preparation leaves the 3x3 solver working and can be retried', async () => {
+  const w = fakeWorker();
+  const c = createSolverClient(w);
+  w.reply({ type: 'ready', cached: true });
+  const first = c.prepare4();
+  w.reply({ type: 'error4', message: 'out of memory' });
+  await assert.rejects(first, /out of memory/);
+  assert.equal(c.failed, false);
+  assert.equal(c.isReady4, false);
+  const s = c.solve({});
+  w.reply({ type: 'solution', id: w.sent.at(-1).id, moves: [] });
+  assert.deepEqual(await s, []);
+  const second = c.prepare4();
+  assert.notEqual(second, first);
+  assert.equal(w.sent.filter((m) => m.type === 'prepare4').length, 2);
+  w.reply({ type: 'ready4' });
+  await second;
+  assert.equal(c.isReady4, true);
+});
