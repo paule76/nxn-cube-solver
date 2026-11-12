@@ -22,7 +22,7 @@ test('5x5: 150 fields, 98 cubies; switching 4x4 <-> 5x5 keeps both inputs', asyn
   await closePage(p);
 });
 
-test('5x5: validation messages and "solver coming soon"', async () => {
+test('5x5: validation messages; a valid cube gets solved', async () => {
   const p = await openPage(ctx, { hash: '#5x5' });
   await p.click('#solve');
   assert.equal(await text(p, '#message'), 'Schon gelöst!');
@@ -34,7 +34,7 @@ test('5x5: validation messages and "solver coming soon"', async () => {
   await p.click('#reset');
   await paint(p, stateAfter5("Rw U Fw' D2 Lw2 B"));
   await p.click('#solve');
-  assert.equal(await text(p, '#message'), 'Gültiger Würfel – der 5x5-Solver folgt.');
+  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: 60000 });
   await closePage(p);
 });
 

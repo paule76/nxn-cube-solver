@@ -176,7 +176,7 @@ async function solve() {
   }
   try {
     if (!solver.isReady) {
-      setMessage(puzzle.id === '4x4' ? 'msg.preparing4' : 'msg.preparing3');
+      setMessage({ '4x4': 'msg.preparing4', '5x5': 'msg.preparing5' }[puzzle.id] ?? 'msg.preparing3');
       await withTimeout(solver.whenReady(), PREPARE_TIMEOUT_MS);
       if (!isCurrent()) return;
     }

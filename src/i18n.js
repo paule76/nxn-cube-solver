@@ -6,9 +6,9 @@ export const LANGS = ['de', 'en'];
 export const MESSAGES = {
   de: {
     'meta.title': 'Würfel-Löser',
-    'meta.description': 'Gib die Farben deines Zauberwürfels (2x2, 3x3 oder 4x4) ein und erhalte eine kurze Lösung Schritt für Schritt – mit 3D-Animation.',
+    'meta.description': 'Gib die Farben deines Zauberwürfels (2x2 bis 5x5) ein und erhalte eine kurze Lösung Schritt für Schritt – mit 3D-Animation.',
     'app.title': 'Würfel-Löser',
-    'app.lead': 'Wähle die Größe, färbe das Netz wie deinen Würfel ein und drücke „Lösen“. 2x2: kürzeste Lösung · 3x3: kurze Lösung (meist ≤ 20 Züge) · 4x4: in Phasen (meist 70–100 Züge).',
+    'app.lead': 'Wähle die Größe, färbe das Netz wie deinen Würfel ein und drücke „Lösen“. 2x2: kürzeste Lösung · 3x3: kurze Lösung (meist ≤ 20 Züge) · 4x4/5x5: in Phasen (meist 70–100 bzw. 110–150 Züge).',
     'lang.label': 'Sprache',
 
     'input.title': 'Würfel eingeben',
@@ -101,6 +101,7 @@ export const MESSAGES = {
     'msg.searching': 'Suche Lösung …',
     'msg.solverFailed': 'Der Solver konnte nicht gestartet werden.',
     'msg.preparing4': '4x4-Solver wird vorbereitet …',
+    'msg.preparing5': '5x5-Solver wird vorbereitet …',
     'msg.solveFailed': 'Beim Lösen ist ein Fehler aufgetreten – bitte noch einmal versuchen.',
     'size.label': 'Würfelgröße',
     'move.face.D': 'untere Seite',
@@ -164,9 +165,9 @@ export const MESSAGES = {
   },
   en: {
     'meta.title': 'Cube Solver',
-    'meta.description': 'Enter the colours of your cube (2x2, 3x3 or 4x4) and get a short solution step by step – with 3D animation.',
+    'meta.description': 'Enter the colours of your cube (2x2 to 5x5) and get a short solution step by step – with 3D animation.',
     'app.title': 'Cube Solver',
-    'app.lead': 'Choose the size, colour the net like your cube and press “Solve”. 2x2: shortest solution · 3x3: short solution (usually ≤ 20 moves) · 4x4: in phases (usually 70–100 moves).',
+    'app.lead': 'Choose the size, colour the net like your cube and press “Solve”. 2x2: shortest solution · 3x3: short solution (usually ≤ 20 moves) · 4x4/5x5: in phases (usually 70–100 or 110–150 moves).',
     'lang.label': 'Language',
 
     'input.title': 'Enter your cube',
@@ -259,6 +260,7 @@ export const MESSAGES = {
     'msg.searching': 'Searching for a solution …',
     'msg.solverFailed': 'The solver could not be started.',
     'msg.preparing4': 'Preparing the 4x4 solver …',
+    'msg.preparing5': 'Preparing the 5x5 solver …',
     'msg.solveFailed': 'Something went wrong while solving – please try again.',
     'size.label': 'Cube size',
     'move.face.D': 'bottom face',

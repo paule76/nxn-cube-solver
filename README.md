@@ -11,8 +11,9 @@ Statische Web-App zum Eingeben, Prüfen, Mischen und Lösen von Zauberwürfeln �
 | 2x2 | ✅ | ✅ | ✅ optimal (höchstens 11 Züge) |
 | 3x3 | ✅ | ✅ (zufälliger Zustand) | ✅ kurz, meist ≤ 20 Züge (Kociemba); erklärte Anfänger-Methode folgt (Teilprojekt C) |
 | 4x4 | ✅ | ✅ (40 Züge inkl. Doppelschicht) | ✅ in Phasen (Reduktion), meist 70–100 Züge |
+| 5x5 | ✅ | ✅ (60 Züge inkl. Doppelschicht) | ✅ in Phasen (Reduktion), meist 110–150 Züge |
 
-Die Größe wählt man oben im Eingabebereich (**2x2 | 3x3 | 4x4**). Sie steht auch in der Adresse (`#2x2`, `#3x3`, `#4x4`), sodass man direkt verlinken kann; die Zurück-Taste des Browsers wechselt die Größe. Jede Größe merkt sich ihre Eingabe.
+Die Größe wählt man oben im Eingabebereich (**2x2 | 3x3 | 4x4 | 5x5**). Sie steht auch in der Adresse (`#2x2` … `#5x5`), sodass man direkt verlinken kann; die Zurück-Taste des Browsers wechselt die Größe. Jede Größe merkt sich ihre Eingabe.
 
 ## Bedienung
 
@@ -43,6 +44,7 @@ Notation: `R` = rechte Seite im Uhrzeigersinn (mit Blick auf die Seite), `R'` = 
 | `src/puzzles/` | Puzzle-Module je Größe (`cube2.js`, `cube3.js`): Prüfung, Mischen, Solver |
 | `src/cube.js`, `src/solver.js` | 2x2-Modell und optimaler 2x2-Solver (Distanztabelle über 3.674.160 Zustände) |
 | `src/solver3/` | 3x3-Solver: Kociemba-Koordinaten, Zug-/Pruning-Tabellen, Zwei-Phasen-Suche, Zufallszustände, Web Worker, IndexedDB-Cache |
+| `src/solver5/` | 5x5-Solver: Mitten in vier Stufen (`centers.js`, Blickrichtungen in `rotate.js`), Kanten paaren mit Parität (`edges.js`), Gesamtablauf (`reduce.js`) |
 | `src/solver4/` | 4x4-Solver: Mitten (`centers.js`), Kanten paaren (`edges.js`), Parität und 3x3-Sicht (`parity.js`), Gesamtablauf (`reduce.js`) |
 | `src/solvers.js` | einheitliche asynchrone Solver-Schnittstelle je Größe |
 | `src/views/` | Netz- und 3D-Ansicht (CSS-3D) für beliebiges N |
@@ -75,6 +77,19 @@ Der 4x4 wird durch Reduktion auf einen 3x3 gelöst; die Lösung wird in Phasen m
 
 Jede Lösung wird vor der Anzeige am Ausgangszustand geprüft. In Node: im Mittel ~85 Züge (max. ~105), ~0,35 s je Würfel;
 die Tabellen baut der Web Worker beim Wechsel auf 4x4 in ~1–2 s auf.
+
+## 5x5-Solver
+
+Ebenfalls Reduktion auf einen 3x3, Anzeige in denselben Phasen:
+
+1. **Mitten** – x-Mitten (diagonal) und t-Mitten (seitlich) gemeinsam in vier Stufen: U/D-Farben auf U/D, F/B-Farben
+   auf F/B, dann U und D fertig, dann die vier Seiten. Gesucht wird mit IDA* über Distanztabellen je Mitten-Art; für
+   die ersten zwei Stufen wird die günstigste Achse gewählt, bei sehr schweren Fällen werden erst die x-Mitten gelöst.
+2. **Kanten paaren** – die zwei Kantenstücke jeder Kante zur Mittelkante, wie beim 4x4 (eine oder beide Reihen je Schritt).
+3. **Parität** – sind zwei Kantenstücke ungerade vertauscht, hilft eine feste 15-Zug-Folge.
+4. **Wie ein 3x3 lösen** – Kociemba wie oben.
+
+In Node: im Mittel ~132 Züge (max. ~150), ~1,25 s je Würfel; Tabellenaufbau beim Wechsel auf 5x5 ~1,5–3 s.
 
 ## Lokal starten
 

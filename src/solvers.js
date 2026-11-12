@@ -1,5 +1,5 @@
 // One asynchronous solver interface per cube size for the app.
-// 2x2: optimal solver in the page (ready at once). 3x3 and 4x4: one web worker, started lazily.
+// 2x2: optimal solver in the page (ready at once). 3x3, 4x4 and 5x5: one web worker, started lazily.
 // solve(state, facelets) answers in phases: [{ phase, moves }], empty phases left out.
 import { PUZZLES } from './puzzles/index.js';
 import { createSolverClient } from './solver3/client.js';
@@ -12,7 +12,7 @@ function failedClient(error) {
   const rejected = () => Promise.reject(error);
   const ready = Promise.reject(error);
   ready.catch(() => {});
-  return { ready, isReady: false, failed: true, solve: rejected, solve4: rejected, randomScramble: rejected, prepare4: rejected, isReady4: false };
+  return { ready, isReady: false, failed: true, solve: rejected, solveBig: rejected, randomScramble: rejected, prepareBig: rejected, isReadyBig: () => false };
 }
 
 /**
@@ -53,9 +53,10 @@ export function createSolvers({ createWorker = defaultWorker } = {}) {
     randomScramble: () => start3().randomScramble(),
   };
 
-  const solver4 = {
+  /** 4x4 / 5x5: tables are built in the worker per size; answers come in phases. */
+  const bigSolver = (n) => ({
     get isReady() {
-      return !!client?.isReady && !!client?.isReady4;
+      return !!client?.isReady && !!client?.isReadyBig(n);
     },
     get failed() {
       return !!client?.failed;
@@ -63,22 +64,25 @@ export function createSolvers({ createWorker = defaultWorker } = {}) {
     get cached() {
       return client?.cached ?? null;
     },
-    whenReady: () => start3().ready.then(() => client.prepare4()),
-    // the worker answers in order, so prepare4 always runs before this request
+    whenReady: () => start3().ready.then(() => client.prepareBig(n)),
+    // the worker answers in order, so the preparation always runs before this request
     solve: (state, facelets) => {
       const c = start3();
-      c.prepare4();
-      return c.solve4(facelets);
+      c.prepareBig(n);
+      return c.solveBig(n, facelets);
     },
-  };
+  });
+  const solver4 = bigSolver(4);
+  const solver5 = bigSolver(5);
 
-  const byId = { '2x2': solver2, '3x3': solver3, '4x4': solver4 };
+  const byId = { '2x2': solver2, '3x3': solver3, '4x4': solver4, '5x5': solver5 };
   return {
     /** @returns {object|undefined} the solver for this size, or undefined if there is none yet */
     get: (id) => byId[id],
     start(id) {
       if (id === '3x3') start3();
-      if (id === '4x4') start3().prepare4();
+      if (id === '4x4') start3().prepareBig(4);
+      if (id === '5x5') start3().prepareBig(5);
     },
   };
 }
