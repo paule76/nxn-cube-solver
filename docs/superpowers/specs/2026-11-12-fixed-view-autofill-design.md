@@ -48,7 +48,10 @@ Auto-Färben: ein sinnvoller Weg – Ausschlussverfahren auf Farbebene über die
 ## 2. Auto-Färben
 ### Wann
 Nach jeder Eingabe des Nutzers (Feld im Netz antippen; ein Tipp am 3D-Würfel markiert wie bisher nur das Feld im
-Netz), in allen Größen (2x2–5x5). [Offen: gilt nur, solange Felder leer sind? – Rückfrage an den Nutzer]
+Netz), in allen Größen (2x2–5x5) – **nur solange noch Felder leer sind** (typisch nach „Leeren“, beim Abtippen des
+echten Würfels). Auf einem vollständigen Würfel (Start, nach Mischen, „Gelöst zurücksetzen“, Bearbeiten während einer
+Lösung) bleibt alles wie heute: freies Umfärben, keine ausgeblendeten Farben, „Lösen“ meldet Fehler. Alle Felder eines
+vollständigen Würfels zählen als eigene.
 Nicht beim Mischen, „Gelöst zurücksetzen“, „Leeren“ und beim Anzeigen einer Lösung (dort sind alle Felder gesetzt).
 
 ### Was zwingend folgt (Ausschlussverfahren, wiederholt bis nichts mehr folgt)
@@ -78,9 +81,12 @@ voll, kommt sie für kein Feld mehr in Frage; hat eine Mitten-Gruppe nur noch ei
   bleibt stehen). Die bestehenden Fehlermeldungen beim „Lösen“ bleiben unverändert.
 
 ### Farbauswahl
-- **Volle Farben** (n² Felder gefärbt, eigene + ergänzte) werden in der Farbauswahl **ausgeblendet** (nicht wählbar).
+- Solange Felder leer sind: **volle Farben** (n² Felder gefärbt, eigene + ergänzte) werden in der Farbauswahl
+  **ausgeblendet** (nicht wählbar). Ist der Würfel vollständig, sind wieder alle Farben wählbar.
 - Ist die gewählte Farbe voll, springt die Auswahl auf die nächste freie Farbe; sind alle voll, ist keine gewählt.
 - Ein Feld in einer vollen Farbe kann man weiter umfärben (das gibt die Farbe wieder frei).
+- Wird durch das Ergänzen der letzte leere Platz gefüllt, ist der Würfel vollständig; ab dann gilt das Verhalten
+  für vollständige Würfel (die Markierungen der ergänzten Felder bleiben sichtbar, bis der Nutzer etwas ändert).
 
 ## Rahmen
 - Keine Abhängigkeiten, kein Build; Texte DE + EN; alle bisherigen Unit- und e2e-Tests grün (wo sie das bisherige
