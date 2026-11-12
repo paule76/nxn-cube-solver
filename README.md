@@ -10,6 +10,7 @@ Statische Web-App zum Eingeben, Prüfen, Mischen und Lösen von Zauberwürfeln �
 |---|---|---|---|
 | 2x2 | ✅ | ✅ | ✅ optimal (höchstens 11 Züge) |
 | 3x3 | ✅ | ✅ (zufälliger Zustand) | ✅ kurz, meist ≤ 20 Züge (Kociemba); erklärte Anfänger-Methode folgt (Teilprojekt C) |
+| 4x4 | ✅ | ✅ (40 Züge inkl. Doppelschicht) | folgt (Teilprojekt D2: Reduktion) |
 
 Die Größe wählt man oben im Eingabebereich (**2x2 | 3x3**). Sie steht auch in der Adresse (`#2x2`, `#3x3`), sodass man direkt verlinken kann; die Zurück-Taste des Browsers wechselt die Größe. Jede Größe merkt sich ihre Eingabe.
 
@@ -32,7 +33,7 @@ Zum Üben erzeugt **Zufällig mischen** eine Mischung und zeigt sie animiert: be
 - Netz und 3D-Würfel heben dasselbe Feld hervor (Maus über Netz-Feld bzw. Klick auf 3D-Sticker).
 - **Tastatur:** ← / → Zurück / Weiter, Pos1 / Ende, Leertaste = Abspielen / Pause.
 
-Notation: `R` = rechte Seite im Uhrzeigersinn (mit Blick auf die Seite), `R'` = gegen den Uhrzeigersinn, `R2` = halbe Drehung; Seiten U D L R F B. Unterstützt wird das Standard-Farbschema (Weiß↔Gelb, Grün↔Blau, Rot↔Orange gegenüber).
+Notation: `R` = rechte Seite im Uhrzeigersinn (mit Blick auf die Seite), `R'` = gegen den Uhrzeigersinn, `R2` = halbe Drehung; Seiten U D L R F B. Beim 4x4 dreht `Rw` die rechten zwei Schichten zusammen (WCA-Notation). Unterstützt wird das Standard-Farbschema (Weiß↔Gelb, Grün↔Blau, Rot↔Orange gegenüber).
 
 ## Aufbau
 
