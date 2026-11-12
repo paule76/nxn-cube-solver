@@ -398,6 +398,8 @@ for (const btn of document.querySelectorAll('.size-switch .size')) {
 window.addEventListener('hashchange', () => {
   const id = sizeFromHash(location.hash);
   if (id) switchSize(id, { push: false });
+  // Unknown hash, or the switch was refused (e.g. while scrambling): keep the URL in sync.
+  if (location.hash !== `#${puzzle.id}`) history.replaceState(null, '', `#${puzzle.id}`);
 });
 
 // --- Remaining controls -------------------------------------------------------------

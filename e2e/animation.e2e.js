@@ -46,17 +46,24 @@ test('half turn shows counter 1, pause, 2', async () => {
   const p = await openPage(ctx);
   await paint(p, stateAfter('R2'));
   await p.click('#solve');
-  const t0 = Date.now();
-  await p.click('#next');
-  const samples = [];
-  for (const at of [150, 500, 850]) {
-    await p.waitForTimeout(Math.max(0, at - (Date.now() - t0)));
-    samples.push(await p.evaluate(() => {
+  // Record the sequence of counter values in the page until the move is done (no fixed sample times).
+  const recording = p.evaluate(() => new Promise((resolve) => {
+    const seen = [];
+    const t0 = performance.now();
+    const tick = () => {
       const e = document.querySelector('.turn-count');
-      return e.hidden ? '-' : e.textContent;
-    }));
-  }
-  assert.deepEqual(samples, ['1', '1', '2']);
+      const v = e.hidden ? '-' : e.textContent;
+      if (seen.at(-1) !== v) seen.push(v);
+      if (/^(Fertig|Done)/.test(document.getElementById('step-text').textContent)) {
+        resolve({ seen, ms: performance.now() - t0 });
+      } else requestAnimationFrame(tick);
+    };
+    tick();
+  }));
+  await p.click('#next');
+  const { seen, ms } = await recording;
+  assert.deepEqual(seen.filter((v) => v !== '-'), ['1', '2']);
+  assert.ok(ms >= 900, `half turn took ${Math.round(ms)} ms`);
   await p.waitForFunction(finished, null, { timeout: 2000 });
   await p.waitForTimeout(100);
   assert.equal(await counterVisible(p), false);

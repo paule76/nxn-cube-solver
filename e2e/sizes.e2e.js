@@ -33,6 +33,32 @@ test('switching sizes keeps each input; back button switches back', async () => 
   await closePage(p);
 });
 
+test('URL always matches the shown size (back during scramble, unknown hash)', async () => {
+  const p = await openPage(ctx, { hash: '#2x2' });
+  await p.click('.size[data-size="3x3"]');
+  await p.click('#scramble');
+  await p.waitForTimeout(200);
+  await p.goBack();
+  await p.waitForTimeout(200);
+  assert.ok(p.url().endsWith('#3x3'), p.url());
+  assert.equal((await p.$$('.cell')).length, 54);
+  await p.evaluate(() => { location.hash = '#foo'; });
+  await p.waitForTimeout(100);
+  assert.ok(p.url().endsWith('#3x3'), p.url());
+  await closePage(p);
+});
+
+test('the last chosen size is remembered without a hash', async () => {
+  const p = await openPage(ctx, { hash: '#3x3' });
+  await p.click('.size[data-size="2x2"]');
+  const q = await p.context().newPage();
+  await q.goto(p.url().replace(/#.*$/, ''));
+  await q.waitForFunction(() => document.querySelectorAll('.cell').length > 0);
+  assert.equal((await q.$$('.cell')).length, 24);
+  await q.close();
+  await closePage(p);
+});
+
 test('a valid 3x3 is accepted (solver follows in B); solved one is recognised', async () => {
   const p = await openPage(ctx, { hash: '#3x3' });
   await p.click('#solve');
