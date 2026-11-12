@@ -36,3 +36,11 @@ test('detectLang', () => {
   assert.equal(detectLang({ navigatorLanguages: [] }), 'en');
   assert.equal(detectLang({}), 'en');
 });
+
+test('*Html keys contain no placeholders (only fixed text goes through innerHTML)', () => {
+  for (const lang of LANGS) {
+    for (const [key, text] of Object.entries(MESSAGES[lang])) {
+      if (key.endsWith('Html')) assert.doesNotMatch(text, /\{\w+\}/, `${lang} ${key}`);
+    }
+  }
+});

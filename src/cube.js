@@ -121,7 +121,7 @@ export function parseFacelets(facelets) {
   }
   for (const color of COLORS) {
     const n = facelets.filter((c) => c === color).length;
-    if (n !== 4) return fail('colorCount', { color, count: n });
+    if (n !== 4) return fail('colorCount', { color, count: n, expected: 4 });
   }
 
   const [d, b, l] = CORNER_FACELETS[6].map((i) => facelets[i]);

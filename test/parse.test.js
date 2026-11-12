@@ -41,7 +41,7 @@ test('color count', () => {
   const f = solved();
   f[0] = 'Y';
   const r = parseFacelets(f);
-  assert.deepEqual(r, { ok: false, code: 'colorCount', params: { color: 'W', count: 3 } });
+  assert.deepEqual(r, { ok: false, code: 'colorCount', params: { color: 'W', count: 3, expected: 4 } });
   assert.equal(de(r), 'Weiß kommt 3× vor (erwartet: 4×).');
   assert.equal(en(r), 'White appears 3× (expected: 4×).');
 });

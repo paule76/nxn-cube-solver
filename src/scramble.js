@@ -1,23 +1,27 @@
 import { MOVES } from './cube.js';
 
-const FACES = ['U', 'R', 'F'];
+const OPPOSITE = { U: 'D', D: 'U', R: 'L', L: 'R', F: 'B', B: 'F' };
 const TURNS = [1, 2, -1];
 
 /**
- * Random move sequence for practice. Never turns the same face twice in a row,
- * so no moves cancel or merge.
+ * Random move sequence for practice. Never turns the same face twice in a row and never
+ * "X, opposite of X, X" (e.g. R L R), so no moves cancel or merge.
  * @param {number} [length=12]
  * @param {() => number} [rng=Math.random] returns numbers in [0, 1)
+ * @param {object[]} [pool=MOVES] allowed move objects (default: the 2x2's U/R/F moves)
  */
-export function randomScramble(length = 12, rng = Math.random) {
+export function randomScramble(length = 12, rng = Math.random, pool = MOVES) {
+  const faceOrder = [...new Set(pool.map((m) => m.face))];
   const moves = [];
-  let last = null;
   for (let i = 0; i < length; i++) {
-    const faces = FACES.filter((f) => f !== last);
+    const last = moves[i - 1]?.face;
+    const beforeLast = moves[i - 2]?.face;
+    const faces = faceOrder.filter(
+      (f) => f !== last && !(OPPOSITE[f] === last && f === beforeLast),
+    );
     const face = faces[Math.floor(rng() * faces.length)];
     const turns = TURNS[Math.floor(rng() * TURNS.length)];
-    moves.push(MOVES.find((m) => m.face === face && m.turns === turns));
-    last = face;
+    moves.push(pool.find((m) => m.face === face && m.turns === turns));
   }
   return moves;
 }
