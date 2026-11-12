@@ -17,7 +17,9 @@ zufällig mischen und Züge animiert ansehen. Der 2x2 funktioniert unverändert 
 - Prüfung von A lokal (Tests + Playwright + Screenshots).
 
 ## Rahmen
-- Weiterhin keine Abhängigkeiten, kein Build; fremder Code wird nicht übernommen.
+- Die **ausgelieferte Seite** bleibt ohne Abhängigkeiten und ohne Build; fremder Code wird nicht übernommen.
+- Playwright wird **Entwicklungs-Abhängigkeit** (feste Version, `package-lock.json`) für `e2e/`-Tests;
+  der Deploy kopiert weiterhin nur `index.html`, `style.css`, `src/`.
 - Alle neuen Texte auf Deutsch und Englisch (`src/i18n.js`, Schlüsseltest muss grün bleiben).
 - 2x2-Verhalten, -Tests und -Browserchecks bleiben unverändert grün.
 
@@ -74,9 +76,13 @@ folgt.“ (nur auf dem Branch sichtbar).
   horizontales Scrollen bei 360 px. Mittelsteine beim 3x3 sind normale, einfärbbare Felder.
 - 3D-Würfel: alle äußeren Steine (3x3: 26), Größe skaliert mit N; Pfeil, Halbdrehungs-Zähler
   und Animation für alle sechs Seiten.
-- Verdeckte Seiten (D, L, B): Ist der nächste Zug (Hinweis oder Animation) auf einer im
-  Standard-Blickwinkel unsichtbaren Seite, dreht sich die Kamera animiert so, dass die Seite
-  sichtbar wird, und danach zurück – außer der Nutzer hat die Ansicht selbst gedreht.
+- Verdeckte Seiten: Maßgeblich ist die **tatsächliche Sichtbarkeit** aus dem aktuellen
+  Blickwinkel (aus den Kamerawinkeln berechnet, als reine Funktion getestet).
+  - Seite sichtbar → keine Kameradrehung.
+  - Seite verdeckt → Kamera dreht animiert auf einen festen Blickwinkel je Seite
+    (z. B. D: schräg von unten vorne), danach zurück zum **vorherigen** Blickwinkel
+    (Standard oder selbst gewählt).
+  - Folgen mehrere Züge auf verdeckten Seiten (Autoplay), bleibt die Kamera dazwischen stehen.
 - Zugtexte ergänzt: untere / linke / hintere Seite (DE) bzw. bottom / left / back face (EN).
 - Mischen 3x3: 20 Züge über alle Seiten; nie zweimal dieselbe Seite hintereinander und keine
   Folge „X, Gegenseite, X“ (z. B. `R L R`).
@@ -112,6 +118,50 @@ folgt.“ (nur auf dem Branch sichtbar).
   3x3 einfärben, Fehlermeldungen; Mischen 3x3 → 3D == Netz; Animation auf D/L/B mit Kameradrehung;
   beide Sprachen; kein H-Scroll bei 375 px; keine Konsolenfehler; alle bisherigen 2x2-Checks grün.
 
+## Sicherheit
+- Hash (`#2x2`/`#3x3`) und localStorage-Werte (Größe, Sprache) werden nur gegen die Liste
+  bekannter Werte geprüft; unbekannte Werte werden ignoriert und nie ins DOM geschrieben.
+- `innerHTML` bleibt auf `*Html`-Wörterbuchschlüssel beschränkt; ein Test stellt sicher,
+  dass diese Schlüssel keine Platzhalter enthalten.
+
+## Repos
+- `2x2-cube-solver` wird eingefroren: nur noch kritische Fehlerbehebungen, die per
+  `cherry-pick` auch in `nxn-cube-solver` übernommen werden. Neue Funktionen nur hier.
+- Nach Livegang von B: Hinweis auf der 2x2-Seite und in deren README auf die neue Version
+  (eine spätere Weiterleitung auf `#2x2` wird dann entschieden).
+
+## Reihenfolge der Umsetzung
+1. e2e-Tests (Playwright) ins Repo, sichern den heutigen 2x2-Stand ab; auch in GitHub Actions.
+2. N×N-Engine mit Abgleich gegen das 2x2-Modell.
+3. 3x3-Modell, Prüfung, Mischen (reine Logik mit Tests).
+4. Netz und 3D-Ansicht auf N umbauen, zunächst nur 2x2 – e2e bleibt grün (sicherer Zwischenstand).
+5. Größenwahl, Hash, Zustand je Größe, 3x3 in der Oberfläche.
+6. Kameradrehung für verdeckte Seiten.
+7. Texte, README, abschließender Review durch frischen Reviewer.
+
 ## Nicht im Umfang
-3x3-Solver (B), Anfänger-Methode (C), 4x4+ und innere Schichten in der Oberfläche (D),
+3x3-Solver (B), echte Zufallszustände beim Mischen (B, braucht den Solver), Anfänger-Methode (C), 4x4+ und innere Schichten in der Oberfläche (D),
 Einfärben direkt am 3D-Würfel.
+
+## Stress Test Results: Teilprojekt A
+
+### Resolved Decisions
+- Kameradrehung: nach tatsächlicher Sichtbarkeit, Rückkehr zum vorherigen Blickwinkel, kein Hin-und-her bei Folgezügen.
+- Repos: 2x2 eingefroren, Fixes per cherry-pick, Neues nur in nxn; Hinweis nach B.
+- Mischen: 20 Zufallszüge in A; echte Zufallszustände in B.
+- Regression: e2e-Tests (Playwright, devDependency) als erste Aufgabe, auch in CI.
+- Sicherheit: Hash/localStorage gegen Allowlist; innerHTML nur für platzhalterfreie `*Html`-Schlüssel; Playwright gepinnt, nicht ausgeliefert.
+- Umfang: 7 getrennt testbare Schritte, sicherer Zwischenstand nach Schritt 4, Review am Ende.
+
+### Changes Made
+- Regel „keine Abhängigkeiten“ präzisiert (gilt für die ausgelieferte Seite).
+- Abschnitte Sicherheit, Repos, Reihenfolge ergänzt; Kameraregel präzisiert.
+
+### Deferred / Parking Lot
+- Echte Zufallszustände beim Mischen → B.
+- Performance großer Würfel (5x5: 98 Steine) auf älteren Handys → D.
+- Weiterleitung der 2x2-Seite → nach B entscheiden.
+
+### Confidence Assessment
+- Overall: High
+- Areas of concern: Umbau der 3D-Ansicht (Animation/Fokus/Ziehen) – abgefedert durch e2e-Tests vor dem Umbau.
