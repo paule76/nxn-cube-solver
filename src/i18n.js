@@ -5,10 +5,10 @@ export const LANGS = ['de', 'en'];
 
 export const MESSAGES = {
   de: {
-    'meta.title': '2x2 Würfel-Löser',
-    'meta.description': 'Gib die Farben deines 2x2-Würfels ein und erhalte die kürzeste Lösung Schritt für Schritt.',
-    'app.title': '2x2 Würfel-Löser',
-    'app.lead': 'Färbe das Netz wie deinen Würfel ein und drücke „Lösen“. Du bekommst die kürzestmögliche Lösung (höchstens 11 Züge).',
+    'meta.title': 'Würfel-Löser',
+    'meta.description': 'Gib die Farben deines Zauberwürfels (2x2 oder 3x3) ein und erhalte die Lösung Schritt für Schritt.',
+    'app.title': 'Würfel-Löser',
+    'app.lead': 'Wähle die Größe, färbe das Netz wie deinen Würfel ein und drücke „Lösen“.',
     'lang.label': 'Sprache',
 
     'input.title': 'Würfel eingeben',
@@ -118,10 +118,10 @@ export const MESSAGES = {
     'footer.license': 'MIT-Lizenz',
   },
   en: {
-    'meta.title': '2x2 Cube Solver',
-    'meta.description': 'Enter the colours of your 2x2 cube and get the shortest solution step by step.',
-    'app.title': '2x2 Cube Solver',
-    'app.lead': 'Colour the net like your cube and press “Solve”. You get the shortest possible solution (at most 11 moves).',
+    'meta.title': 'Cube Solver',
+    'meta.description': 'Enter the colours of your cube (2x2 or 3x3) and get the solution step by step.',
+    'app.title': 'Cube Solver',
+    'app.lead': 'Choose the size, colour the net like your cube and press “Solve”.',
     'lang.label': 'Language',
 
     'input.title': 'Enter your cube',

@@ -1,55 +1,58 @@
 # NxN Cube Solver
 
-> Hervorgegangen aus [2x2-cube-solver](https://github.com/paule76/2x2-cube-solver) (bleibt als stabile 2x2-Version online: https://paule76.github.io/2x2-cube-solver/).
-> Ziel dieses Repos: Erweiterung auf weitere Würfelgrößen (zuerst 3x3). **Aktueller Stand: 2x2.**
+Statische Web-App zum Eingeben, Prüfen, Mischen und Lösen von Zauberwürfeln – auf Deutsch und Englisch.
 
-## 2x2 Würfel-Löser
+> Hervorgegangen aus [2x2-cube-solver](https://github.com/paule76/2x2-cube-solver). Dieses Repo bleibt eingefroren als stabile 2x2-Version online (https://paule76.github.io/2x2-cube-solver/) und bekommt nur noch kritische Fehlerbehebungen; neue Funktionen entstehen hier.
 
-Statische Web-App, die einen 2x2-Zauberwürfel **optimal** löst (kürzestmögliche Zugfolge, höchstens 11 Züge).
+## Stand
+
+| Größe | Eingabe & Prüfung | Mischen & Animation | Lösen |
+|---|---|---|---|
+| 2x2 | ✅ | ✅ | ✅ optimal (höchstens 11 Züge) |
+| 3x3 | ✅ | ✅ | folgt (Teilprojekt B: Kociemba, ~20 Züge; C: Anfänger-Methode) |
+
+Die Größe wählt man oben im Eingabebereich (**2x2 | 3x3**). Sie steht auch in der Adresse (`#2x2`, `#3x3`), sodass man direkt verlinken kann; die Zurück-Taste des Browsers wechselt die Größe. Jede Größe merkt sich ihre Eingabe.
 
 ## Bedienung
 
-1. Farbe in der Palette wählen und die Felder im aufgeklappten Netz einfärben – so, wie dein Würfel aussieht (U = oben, F = vorne, R = rechts, L = links, B = hinten, D = unten).
-2. **Lösen** drücken.
-   Zum Üben: **Zufällig mischen** erzeugt eine zufällige Mischung aus 12 Zügen und zeigt sie animiert.
-3. Mit **Weiter / Zurück** die Züge Schritt für Schritt durchgehen. Das Netz zeigt jeweils den Zwischenstand.
+1. Größe wählen, Farbe in der Palette wählen und die Felder im aufgeklappten Netz einfärben – so, wie dein Würfel aussieht (U = oben, F = vorne, R = rechts, L = links, B = hinten, D = unten). Seite B so eintragen, wie man sie von hinten sieht, Seite D von unten mit der Vorderkante oben.
+2. **Lösen** drücken. Die Eingabe wird geprüft (Farbanzahl, Mittelsteine, Ecken, Kanten, verdrehte Ecken, gekippte Kanten, vertauschte Steine) – Fehlermeldungen nennen die betroffene Stelle.
+3. Mit **Weiter / Zurück** die Züge Schritt für Schritt durchgehen, oder **Abspielen** (Tempo langsam / normal / schnell).
+
+Zum Üben erzeugt **Zufällig mischen** eine Mischung (2x2: 12 Züge, 3x3: 20 Züge) und zeigt sie animiert.
+
+„Leeren“, „Gelöst zurücksetzen“ und „Zufällig mischen“ überschreiben die Eingabe: Der Button wird zuerst rot („Wirklich …?“), erst ein zweiter Klick innerhalb von 3 Sekunden führt die Aktion aus. Ist das Netz leer oder der Würfel gelöst, entfällt die Rückfrage (außer beim Leeren).
 
 ### 3D-Ansicht
 
-- Neben dem Netz zeigt ein 3D-Würfel den aktuellen Stand. **Ziehen** (Maus/Finger) dreht die Ansicht, „Ansicht zurücksetzen“ stellt sie wieder her.
-- Halbe Drehungen (`R2`, `U2`, `F2`) laufen als zwei Vierteldrehungen mit kurzer Pause; ein Zähler „1“ / „2“ hilft beim Mitzählen.
-- Ein **Pfeil** zeigt Seite und Richtung des nächsten Zugs; bei „Weiter“/„Zurück“ dreht sich die Schicht animiert (bei „Bewegung reduzieren“ ohne Animation).
-- **Abspielen** spielt die Lösung automatisch ab (Tempo langsam / normal / schnell).
-- Fährt man im Netz über ein Feld, leuchtet derselbe Sticker im 3D-Würfel auf; ein Klick auf einen 3D-Sticker markiert das Feld im Netz.
+- Ziehen (Maus/Finger) dreht die Ansicht, „Ansicht zurücksetzen“ stellt sie wieder her.
+- Ein **Pfeil** zeigt Seite und Richtung des nächsten Zugs; die Schicht dreht sich animiert (bei „Bewegung reduzieren“ ohne Animation).
+- Halbe Drehungen (`R2` …) laufen als zwei Vierteldrehungen mit Pause und Zähler „1“ / „2“.
+- Liegt der nächste Zug auf einer verdeckten Seite (D, L, B), dreht sich die Kamera dorthin und danach zurück.
+- Netz und 3D-Würfel heben dasselbe Feld hervor (Maus über Netz-Feld bzw. Klick auf 3D-Sticker).
 - **Tastatur:** ← / → Zurück / Weiter, Pos1 / Ende, Leertaste = Abspielen / Pause.
 
-„Leeren“, „Gelöst zurücksetzen“ und „Zufällig mischen“ überschreiben die Eingabe. Dann wird der Button zuerst rot („Wirklich …?“), und erst ein zweiter Klick innerhalb von 3 Sekunden führt die Aktion aus. Ist das Netz leer oder der Würfel gelöst, entfällt die Rückfrage (außer beim Leeren).
+Notation: `R` = rechte Seite im Uhrzeigersinn (mit Blick auf die Seite), `R'` = gegen den Uhrzeigersinn, `R2` = halbe Drehung; Seiten U D L R F B. Unterstützt wird das Standard-Farbschema (Weiß↔Gelb, Grün↔Blau, Rot↔Orange gegenüber).
 
-Notation: `R` = rechte Seite im Uhrzeigersinn (mit Blick auf die Seite), `R'` = gegen den Uhrzeigersinn, `R2` = halbe Drehung. Es werden nur die Seiten U, R und F gedreht – die Ecke hinten-unten-links bleibt an ihrem Platz.
+## Aufbau
 
-## Wie es funktioniert
-
-Mit fester DBL-Ecke hat der 2x2 genau 7! · 3⁶ = 3.674.160 Zustände. Beim Laden berechnet eine Breitensuche für jeden Zustand die Distanz zum gelösten Würfel (~3,7 MB, unter einer Sekunde). Eine Lösung folgt dann einfach Zügen, die die Distanz jeweils um 1 senken – damit ist sie garantiert optimal.
-
-| Datei | Aufgabe |
+| Pfad | Aufgabe |
 |---|---|
-| `src/cube.js` | Würfelmodell, Züge, Netz ↔ Zustand, Validierung |
-| `src/solver.js` | Distanztabelle und Lösungssuche |
-| `src/views/net-view.js` | Netz-Ansicht |
-| `src/views/cube3d-view.js` | 3D-Ansicht (CSS-3D), Animation, Pfeile |
-| `src/geometry.js` | 3D-Lage der Sticker, Schicht-Drehungen |
-| `src/player.js`, `src/keys.js`, `src/stepper.js` | Autoplay, Tastatur, Schritt-Navigation |
-| `src/app.js` | Bedienung, Schritt-Navigation |
+| `src/engine/` | N×N-Geometrie, Züge als Feld-Permutationen, Kamera-Sichtbarkeit |
+| `src/puzzles/` | Puzzle-Module je Größe (`cube2.js`, `cube3.js`): Prüfung, Mischen, Solver |
+| `src/cube.js`, `src/solver.js` | 2x2-Modell und optimaler 2x2-Solver (Distanztabelle über 3.674.160 Zustände) |
+| `src/views/` | Netz- und 3D-Ansicht (CSS-3D) für beliebiges N |
+| `src/app.js` | Bedienung, Größenwahl, Zustand je Größe |
+| `src/i18n.js`, `src/messages.js` | Texte Deutsch/Englisch, Fehlermeldungen |
+| `src/player.js`, `src/keys.js`, `src/stepper.js`, `src/confirm.js` | Autoplay, Tastatur, Schritt-Navigation, Rückfragen |
 
-Ansichten implementieren die Schnittstelle `{ render(facelets), showMove(move, direction), showHint?(move), highlight?(index) }`; die App verteilt Aufrufe an Netz und 3D-Ansicht.
+Puzzle-Module erfüllen `{ id, size, moveFaces, solvedFacelets(), parse(f), isSolved(s), applyMoves(f, moves), scramble(rng), solve?(s) }`. Ansichten erfüllen `{ render(facelets), showMove(move, dir), showHint?(move), highlight?(index) }`.
 
-Die Oberfläche gibt es auf **Deutsch und Englisch** (Umschalter oben rechts; Start in der Browsersprache, die Wahl wird gemerkt). Texte stehen in `src/i18n.js`; ein Test prüft, dass beide Sprachen dieselben Schlüssel haben.
-
-Unterstützt wird das Standard-Farbschema (Weiß↔Gelb, Grün↔Blau, Rot↔Orange gegenüber).
+Die ausgelieferte Seite hat **keine Abhängigkeiten und keinen Build-Schritt**. Playwright ist nur Entwicklungs-Abhängigkeit für die Browser-Tests.
 
 ## Lokal starten
 
-Kein Build nötig, aber ES-Module brauchen einen Webserver:
+ES-Module brauchen einen Webserver:
 
 ```bash
 python3 -m http.server 8000
@@ -59,14 +62,17 @@ python3 -m http.server 8000
 ## Tests
 
 ```bash
-npm test   # Node ≥ 20 (CI: Node 24), keine Abhängigkeiten
+npm test        # Unit-Tests (Node ≥ 20)
+npm ci          # einmalig: Playwright (Entwicklungs-Abhängigkeit)
+npx playwright install chromium   # falls noch kein Browser vorhanden
+npm run e2e     # Browser-Tests (eigener kleiner Server, kein Python nötig)
 ```
 
 ## Veröffentlichung (GitHub Pages)
 
-Der Workflow `.github/workflows/pages.yml` testet und veröffentlicht bei jedem Push auf `main`.
+`.github/workflows/pages.yml` führt Unit- und Browser-Tests bei jedem Push (auf `main` und `feature/**`) und bei Pull Requests aus und veröffentlicht nur von `main`. Veröffentlicht werden ausschließlich `index.html`, `style.css` und `src/`.
 
-Einmalig im Repository einstellen: **Settings → Pages → Build and deployment → Source: „GitHub Actions“**.
+Einmalig im Repository: **Settings → Pages → Build and deployment → Source: „GitHub Actions“**.
 
 ## Lizenz
 
