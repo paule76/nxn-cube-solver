@@ -33,7 +33,8 @@ Lösung führt im Netz und im 3D-Würfel zum gelösten Würfel.
 ### Pruning-Tabellen (Breitensuche, 4 Bit pro Eintrag)
 - Phase 1: twist × slice, flip × slice
 - Phase 2: Ecken × Mittelschicht-Perm, U/D-Kanten × Mittelschicht-Perm
-- Gesamtgröße ≈ 2 MB.
+- Pruning-Tabellen ≈ 2 MB; zusammen mit den Zugtabellen werden ≈ 3,8 MB in IndexedDB gespeichert
+  (Entscheidung bei der Umsetzung: Laden dauert ~4 ms statt ~1 s Neuberechnung).
 
 ### Suche
 - IDA* in Phase 1 bis zur Untergruppe, dann IDA* in Phase 2; Gesamtlänge wird schrittweise verkürzt.
