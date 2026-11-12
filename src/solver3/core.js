@@ -5,6 +5,7 @@ import { buildTables, exportTables, importTables, PHASE1_MOVES, PHASE2_MOVES } f
 import { createSearch } from './search.js';
 import { randomState, inverseMoves } from './random-state.js';
 import { SOLVED3, applyMove3, applyMoves3, isSolved3 } from '../puzzles/cube3.js';
+import { createSolver4 } from '../solver4/reduce.js';
 
 const safely = (fn) => Promise.resolve().then(fn).catch(() => null);
 
@@ -35,6 +36,7 @@ function tablesLookRight(T) {
  */
 export function createSolverCore({ load, save, clear, build = buildTables }) {
   let search = null;
+  let solver4 = null; // built on first use (~1 s); its 3x3 stage uses the verified 3x3 solver
   let saved = Promise.resolve();
 
   function rebuild({ dropCache }) {
@@ -73,6 +75,15 @@ export function createSolverCore({ load, save, clear, build = buildTables }) {
       return { cached: false };
     },
     solve: verifiedSolve,
+    /** Builds the 4x4 tables (after init). */
+    prepare4() {
+      solver4 ??= createSolver4((state) => verifiedSolve(state));
+    },
+    /** 4x4 in phases; the solver checks the result on the given facelets and throws on any error. */
+    solve4(facelets) {
+      this.prepare4();
+      return solver4.solve(facelets).phases;
+    },
     randomScramble: () => inverseMoves(verifiedSolve(randomState())),
     /** Resolves when the last cache write has finished (for tests). */
     get saved() {

@@ -182,7 +182,7 @@ async function solve() {
     }
     markSolverState(solver);
     setMessage('msg.searching');
-    const moves = await solver.solve(r.state);
+    const moves = (await solver.solve(r.state, facelets)).flatMap((p) => p.moves);
     if (!isCurrent()) return; // input or size changed meanwhile
     solution = { facelets, moves, step: 0 };
     if (moves.length === 1) setMessage('msg.foundOne', {}, 'success');
