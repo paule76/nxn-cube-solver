@@ -1,4 +1,4 @@
-import { moveToString } from './cube.js';
+import { moveToString } from './engine/facelets.js';
 
 const TURN_KEY = { 1: 'move.turn.cw', [-1]: 'move.turn.ccw', 2: 'move.turn.half' };
 
@@ -6,7 +6,7 @@ const TURN_KEY = { 1: 'move.turn.cw', [-1]: 'move.turn.ccw', 2: 'move.turn.half'
 export function describeMove(m, t) {
   return t('move.describe', {
     notation: moveToString(m),
-    face: t(`move.face.${m.face}`),
+    face: t((m.depth ?? 1) === 2 ? `move.faceWide.${m.face}` : `move.face.${m.face}`),
     turn: t(TURN_KEY[m.turns]),
   });
 }

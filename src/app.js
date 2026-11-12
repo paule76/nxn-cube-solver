@@ -170,6 +170,10 @@ async function solve() {
   const solver = solvers.get(puzzle.id);
   clearSolution();
   render();
+  if (!solver) {
+    setMessage('msg.validNoSolver', {}, 'success');
+    return;
+  }
   try {
     if (!solver.isReady) {
       setMessage('msg.preparing3');
@@ -342,7 +346,7 @@ function markSolverState(solver) {
 /** 3x3 with a ready solver: a uniformly random state (inverse of its solution); otherwise random moves. */
 async function scrambleMoves(p) {
   const solver = solvers.get(p.id);
-  if (solver.randomScramble && solver.isReady) {
+  if (solver?.randomScramble && solver.isReady) {
     try {
       return await solver.randomScramble();
     } catch {

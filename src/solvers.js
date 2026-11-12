@@ -50,8 +50,10 @@ export function createSolvers({ createWorker = defaultWorker } = {}) {
     randomScramble: () => start3().randomScramble(),
   };
 
+  const byId = { '2x2': solver2, '3x3': solver3 };
   return {
-    get: (id) => (id === '3x3' ? solver3 : solver2),
+    /** @returns {object|undefined} the solver for this size, or undefined if there is none yet */
+    get: (id) => byId[id],
     start(id) {
       if (id === '3x3') start3();
     },

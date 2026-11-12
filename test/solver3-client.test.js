@@ -77,6 +77,12 @@ test('solvers: 2x2 is ready at once, 3x3 starts its worker lazily', async () => 
   assert.equal(s3.isReady, true);
 });
 
+test('solvers: sizes without a solver return undefined', () => {
+  const solvers = createSolvers({ createWorker: () => fakeWorker() });
+  assert.equal(solvers.get('4x4'), undefined);
+  assert.equal(solvers.get('9x9'), undefined);
+});
+
 test('solvers: a worker that cannot be created reports failure', async () => {
   const solvers = createSolvers({ createWorker: () => { throw new Error('no workers'); } });
   const s3 = solvers.get('3x3');
