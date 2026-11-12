@@ -1,4 +1,9 @@
-# 2x2 Würfel-Löser
+# NxN Cube Solver
+
+> Hervorgegangen aus [2x2-cube-solver](https://github.com/paule76/2x2-cube-solver) (bleibt als stabile 2x2-Version online: https://paule76.github.io/2x2-cube-solver/).
+> Ziel dieses Repos: Erweiterung auf weitere Würfelgrößen (zuerst 3x3). **Aktueller Stand: 2x2.**
+
+## 2x2 Würfel-Löser
 
 Statische Web-App, die einen 2x2-Zauberwürfel **optimal** löst (kürzestmögliche Zugfolge, höchstens 11 Züge).
 

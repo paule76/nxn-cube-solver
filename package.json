@@ -1,5 +1,5 @@
 {
-  "name": "2x2-cube-solver",
+  "name": "nxn-cube-solver",
   "version": "1.0.0",
   "private": true,
   "type": "module",
