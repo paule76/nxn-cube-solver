@@ -1,7 +1,6 @@
 import { MOVES } from './cube.js';
 
 const OPPOSITE = { U: 'D', D: 'U', R: 'L', L: 'R', F: 'B', B: 'F' };
-const TURNS = [1, 2, -1];
 
 /**
  * Random move sequence for practice. Never turns the same face twice in a row and never
@@ -20,8 +19,8 @@ export function randomScramble(length = 12, rng = Math.random, pool = MOVES) {
       (f) => f !== last && !(OPPOSITE[f] === last && f === beforeLast),
     );
     const face = faces[Math.floor(rng() * faces.length)];
-    const turns = TURNS[Math.floor(rng() * TURNS.length)];
-    moves.push(pool.find((m) => m.face === face && m.turns === turns));
+    const options = pool.filter((m) => m.face === face); // all turns (and depths) of that face
+    moves.push(options[Math.floor(rng() * options.length)]);
   }
   return moves;
 }
