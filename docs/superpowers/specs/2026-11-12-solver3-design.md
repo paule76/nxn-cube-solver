@@ -40,7 +40,11 @@ Lösung führt im Netz und im 3D-Würfel zum gelösten Würfel.
 - IDA* in Phase 1 bis zur Untergruppe, dann IDA* in Phase 2; Gesamtlänge wird schrittweise verkürzt.
 - Zugfolgen-Regeln: nicht zweimal dieselbe Seite hintereinander; gegenüberliegende Seiten nur
   in fester Reihenfolge (z. B. U vor D).
-- Abbruch: sobald eine Lösung ≤ 20 Züge gefunden ist, spätestens nach **500 ms** (dann beste bis dahin).
+- Abbruch: sobald eine Lösung ≤ 20 Züge bekannt ist **und mindestens 100 ms gesucht wurde**, spätestens nach
+  **500 ms** (dann beste bis dahin). *Entscheidung bei der Umsetzung:* Ohne Mindestsuchzeit waren Lösungen
+  kurzer Mischungen (5–10 Züge) in ~47 % der Fälle länger als die Mischung (im Schnitt +7); mit 100 ms in ~1 %.
+- Am Phasenübergang darf der erste Phase-2-Zug dieselbe Seite drehen wie der letzte Phase-1-Zug;
+  aufeinanderfolgende Züge derselben Seite werden danach zusammengefasst (`R R2` → `R'`).
 - Bereits gelöster Würfel → leere Lösung.
 
 ### Dateien
