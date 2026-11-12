@@ -6,9 +6,9 @@ export const LANGS = ['de', 'en'];
 export const MESSAGES = {
   de: {
     'meta.title': 'Würfel-Löser',
-    'meta.description': 'Gib die Farben deines Zauberwürfels (2x2 oder 3x3) ein und erhalte die Lösung Schritt für Schritt.',
+    'meta.description': 'Gib die Farben deines Zauberwürfels (2x2 oder 3x3) ein und erhalte eine kurze Lösung Schritt für Schritt – mit 3D-Animation.',
     'app.title': 'Würfel-Löser',
-    'app.lead': 'Wähle die Größe, färbe das Netz wie deinen Würfel ein und drücke „Lösen“.',
+    'app.lead': 'Wähle die Größe, färbe das Netz wie deinen Würfel ein und drücke „Lösen“. 2x2: kürzeste Lösung · 3x3: kurze Lösung (meist ≤ 20 Züge).',
     'lang.label': 'Sprache',
 
     'input.title': 'Würfel eingeben',
@@ -97,7 +97,9 @@ export const MESSAGES = {
     'error.duplicateEdge': 'Eine Kante kommt doppelt vor – bitte Eingabe prüfen.',
     'error.flippedEdge': 'Eine Kante ist gekippt – so ist der Würfel nicht lösbar.',
     'error.parity': 'Zwei Steine sind vertauscht – so ist der Würfel nicht lösbar.',
-    'msg.validNoSolver': 'Gültiger Würfel – der 3x3-Solver folgt.',
+    'msg.preparing3': '3x3-Solver wird vorbereitet …',
+    'msg.searching': 'Suche Lösung …',
+    'msg.solverFailed': '3x3-Solver konnte nicht gestartet werden.',
     'size.label': 'Würfelgröße',
     'move.face.D': 'untere Seite',
     'move.face.L': 'linke Seite',
@@ -119,9 +121,9 @@ export const MESSAGES = {
   },
   en: {
     'meta.title': 'Cube Solver',
-    'meta.description': 'Enter the colours of your cube (2x2 or 3x3) and get the solution step by step.',
+    'meta.description': 'Enter the colours of your cube (2x2 or 3x3) and get a short solution step by step – with 3D animation.',
     'app.title': 'Cube Solver',
-    'app.lead': 'Choose the size, colour the net like your cube and press “Solve”.',
+    'app.lead': 'Choose the size, colour the net like your cube and press “Solve”. 2x2: shortest solution · 3x3: short solution (usually ≤ 20 moves).',
     'lang.label': 'Language',
 
     'input.title': 'Enter your cube',
@@ -210,7 +212,9 @@ export const MESSAGES = {
     'error.duplicateEdge': 'An edge appears twice – please check your input.',
     'error.flippedEdge': 'An edge is flipped – the cube cannot be solved like this.',
     'error.parity': 'Two pieces are swapped – the cube cannot be solved like this.',
-    'msg.validNoSolver': 'Valid cube – the 3x3 solver is coming soon.',
+    'msg.preparing3': 'Preparing the 3x3 solver …',
+    'msg.searching': 'Searching for a solution …',
+    'msg.solverFailed': 'The 3x3 solver could not be started.',
     'size.label': 'Cube size',
     'move.face.D': 'bottom face',
     'move.face.L': 'left face',

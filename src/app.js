@@ -10,6 +10,7 @@ import { keyAction } from './keys.js';
 import { createConfirm } from './confirm.js';
 import { createI18n, detectLang, LANGS } from './i18n.js';
 import { formatParseError } from './messages.js';
+import { createSolvers } from './solvers.js';
 
 const COLORS = ['W', 'Y', 'G', 'B', 'R', 'O'];
 
@@ -44,12 +45,28 @@ const colorName = (c) => t(c ? `color.${c}` : 'color.empty');
 
 // --- Puzzle and per-size state ------------------------------------------------
 
-let solverReady = false;
+let solverReady = false; // the 2x2 tables are built right after the first paint
+const solvers = createSolvers();
+/** Bumped on every change of the input, so late solver answers can be recognised as stale. */
+let inputVersion = 0;
 let selected = 'W';
 let puzzle = PUZZLES[pickSize({ hash: location.hash, stored: storageGet(SIZE_KEY) })];
+// Fans the view interface out to all views; showMove waits for every view.
+const view = {
+  render: (facelets) => views.forEach((v) => v.render(facelets)),
+  showMove: (move, direction, options) => Promise.all(views.map((v) => v.showMove(move, direction, options))),
+  showHint: (move) => views.forEach((v) => v.showHint?.(move)),
+};
+
 /** Input and solution are kept per size, so switching back restores them. */
 const sessions = {};
-const sessionFor = (p) => (sessions[p.id] ??= { input: p.solvedFacelets(), solution: null });
+const sessionFor = (p) =>
+  (sessions[p.id] ??= {
+    input: p.solvedFacelets(),
+    solution: null,
+    // One stepper per size: a running step of one size never blocks or advances the other.
+    stepper: createStepper(view, () => (puzzle.id === p.id ? solution : null)),
+  });
 let input = sessionFor(puzzle).input;
 /** @type {null | { facelets: string[], moves: object[], step: number }} */
 let solution = null;
@@ -80,12 +97,6 @@ function buildViews() {
   views = [net, cube3d];
 }
 
-// Fans the view interface out to all views; showMove waits for every view.
-const view = {
-  render: (facelets) => views.forEach((v) => v.render(facelets)),
-  showMove: (move, direction, options) => Promise.all(views.map((v) => v.showMove(move, direction, options))),
-  showHint: (move) => views.forEach((v) => v.showHint?.(move)),
-};
 
 function displayed() {
   if (!solution) return input;
@@ -124,6 +135,7 @@ function onCellClick(index) {
     clearSolution();
   }
   input[index] = selected;
+  inputVersion++;
   setMessage(null);
   render();
 }
@@ -134,7 +146,7 @@ function clearSolution() {
   $('solution').hidden = true;
 }
 
-function solve() {
+async function solve() {
   if (!solverReady) return;
   player.pause();
   const r = puzzle.parse(input);
@@ -150,30 +162,40 @@ function solve() {
     render();
     return;
   }
-  if (!puzzle.solve) {
-    clearSolution();
-    setMessage('msg.validNoSolver', {}, 'success');
-    render();
-    return;
-  }
-  const moves = puzzle.solve(r.state);
-  solution = { facelets: [...input], moves, step: 0 };
-  if (moves.length === 1) setMessage('msg.foundOne', {}, 'success');
-  else setMessage('msg.foundMany', { count: moves.length }, 'success');
-  $('solution').hidden = false;
+  const token = { size: puzzle.id, version: inputVersion };
+  const isCurrent = () => token.size === puzzle.id && token.version === inputVersion;
+  const facelets = [...input];
+  const solver = solvers.get(puzzle.id);
+  clearSolution();
   render();
+  try {
+    if (!solver.isReady) {
+      setMessage('msg.preparing3');
+      await solver.whenReady();
+      if (!isCurrent()) return;
+    }
+    setMessage('msg.searching');
+    const moves = await solver.solve(r.state);
+    if (!isCurrent()) return; // input or size changed meanwhile
+    solution = { facelets, moves, step: 0 };
+    if (moves.length === 1) setMessage('msg.foundOne', {}, 'success');
+    else setMessage('msg.foundMany', { count: moves.length }, 'success');
+    $('solution').hidden = false;
+    render();
+  } catch {
+    if (isCurrent()) setMessage('msg.solverFailed', {}, 'error');
+  }
 }
 
 // --- Navigation and autoplay ------------------------------------------------------
 
-const stepper = createStepper(view, () => solution);
-
 async function goTo(step) {
   // No disabling of the nav buttons here: that would drop keyboard focus during the
   // animation. The stepper itself ignores navigation while a move is shown.
+  const { stepper } = sessionFor(puzzle);
   if (stepper.busy) return;
-  await stepper.goTo(step);
-  render();
+  const changed = await stepper.goTo(step);
+  if (changed) render();
 }
 
 const atEnd = () => !solution || solution.step >= solution.moves.length;
@@ -285,6 +307,7 @@ function buildPalette() {
 
 function resetToSolved() {
   input = puzzle.solvedFacelets();
+  inputVersion++;
   clearSolution();
   setMessage(null);
   render();
@@ -292,6 +315,7 @@ function resetToSolved() {
 
 function clearInput() {
   input = new Array(6 * puzzle.size * puzzle.size).fill(null);
+  inputVersion++;
   clearSolution();
   setMessage(null);
   render();
@@ -305,12 +329,26 @@ function setInputButtonsDisabled(disabled) {
   $('solve').disabled = disabled || !solverReady;
 }
 
+/** 3x3 with a ready solver: a uniformly random state (inverse of its solution); otherwise random moves. */
+async function scrambleMoves(p) {
+  const solver = solvers.get(p.id);
+  if (solver.randomScramble && solver.isReady) {
+    try {
+      return await solver.randomScramble();
+    } catch {
+      // fall back to random moves
+    }
+  }
+  return p.scramble();
+}
+
 async function scramble() {
-  const moves = puzzle.scramble();
   const p = puzzle;
   scrambling = true;
   setInputButtonsDisabled(true);
+  inputVersion++;
   try {
+    const moves = await scrambleMoves(p);
     clearSolution();
     setMessage('msg.scrambling');
     let facelets = p.solvedFacelets();
@@ -320,6 +358,7 @@ async function scramble() {
       await view.showMove(m, 1, { countHalfTurns: false }); // counting only helps when solving
       facelets = p.applyMoves(facelets, [m]);
       input = facelets;
+      inputVersion++;
       render();
     }
     setMessage('msg.scrambled', { moves: moves.map(moveToString).join(' ') });
@@ -385,6 +424,7 @@ function switchSize(id, { push }) {
   puzzle = PUZZLES[id];
   ({ input, solution } = sessionFor(puzzle));
   storageSet(SIZE_KEY, id);
+  solvers.start(id);
   if (push) history.pushState(null, '', `#${id}`);
   buildViews();
   $('solution').hidden = !solution;
@@ -462,6 +502,7 @@ for (const btn of document.querySelectorAll('.lang-switch .lang')) {
 // --- Start --------------------------------------------------------------------------
 
 history.replaceState(null, '', `#${puzzle.id}`);
+solvers.start(puzzle.id);
 buildViews();
 setMessage('msg.init');
 applyLanguage();

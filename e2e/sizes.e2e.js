@@ -59,13 +59,13 @@ test('the last chosen size is remembered without a hash', async () => {
   await closePage(p);
 });
 
-test('a valid 3x3 is accepted (solver follows in B); solved one is recognised', async () => {
+test('a solved 3x3 is recognised and a scrambled one is solved', async () => {
   const p = await openPage(ctx, { hash: '#3x3' });
   await p.click('#solve');
   assert.equal(await text(p, '#message'), 'Schon gelöst!');
   await paint(p, stateAfter3("R U F' D2 L B'"));
   await p.click('#solve');
-  assert.equal(await text(p, '#message'), 'Gültiger Würfel – der 3x3-Solver folgt.');
+  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: 15000 });
   await closePage(p);
 });
 
@@ -89,7 +89,7 @@ test('3x3 scramble animates all faces; 3D matches the net', async () => {
   assert.equal(await cubeColors(p), await netColors(p));
   assert.notEqual(await netColors(p), SOLVED3);
   await p.click('#solve');
-  assert.equal(await text(p, '#message'), 'Gültiger Würfel – der 3x3-Solver folgt.');
+  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: 15000 });
   await closePage(p);
 });
 
