@@ -171,7 +171,7 @@ async function solve() {
   clearSolution();
   render();
   if (!solver) {
-    setMessage('msg.solverFailed', {}, 'error');
+    setMessage('msg.validNoSolver', { size: puzzle.id }, 'success');
     return;
   }
   try {

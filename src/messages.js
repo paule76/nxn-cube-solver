@@ -9,6 +9,7 @@ export function formatParseError({ code, params = {} }, t) {
   const p = { ...params };
   if (p.color) p.color = colorName(p.color);
   if (p.colors) p.colors = p.colors.map(colorName).join('/');
+  if (p.kind) p.kind = t(`centerKind.${p.kind}`);
   if (p.position) {
     if (code.startsWith('edge')) p.edge = t(/\d$/.test(p.position) ? `wing.${p.position}` : `edge.${p.position}`);
     else p.corner = t(`corner.${p.position}`);
