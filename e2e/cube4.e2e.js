@@ -34,7 +34,7 @@ test('4x4: validation messages', async () => {
   await p.click('#reset');
   await paint(p, stateAfter4("Rw U Fw' D2 Lw2 B"));
   await p.click('#solve');
-  assert.equal(await text(p, '#message'), 'Gültiger Würfel – der 4x4-Solver folgt.');
+  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: 30000 });
   await closePage(p);
 });
 

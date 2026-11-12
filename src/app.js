@@ -4,7 +4,7 @@ import { moveToString } from './engine/facelets.js';
 import { PUZZLES, PUZZLE_IDS } from './puzzles/index.js';
 import { pickSize, sizeFromHash, SIZE_KEY } from './size.js';
 import { createStepper } from './stepper.js';
-import { stepText, describeMove } from './step-text.js';
+import { stepText, describeMove, flattenPhases, phaseAt } from './step-text.js';
 import { createPlayer } from './player.js';
 import { keyAction } from './keys.js';
 import { createConfirm } from './confirm.js';
@@ -171,20 +171,21 @@ async function solve() {
   clearSolution();
   render();
   if (!solver) {
-    setMessage('msg.validNoSolver', {}, 'success');
+    setMessage('msg.solverFailed', {}, 'error');
     return;
   }
   try {
     if (!solver.isReady) {
-      setMessage('msg.preparing3');
+      setMessage(puzzle.id === '4x4' ? 'msg.preparing4' : 'msg.preparing3');
       await solver.whenReady();
       if (!isCurrent()) return;
     }
     markSolverState(solver);
     setMessage('msg.searching');
-    const moves = (await solver.solve(r.state, facelets)).flatMap((p) => p.moves);
+    const phases = await solver.solve(r.state, facelets);
     if (!isCurrent()) return; // input or size changed meanwhile
-    solution = { facelets, moves, step: 0 };
+    const { moves, marks } = flattenPhases(phases);
+    solution = { facelets, moves, marks, step: 0 };
     if (moves.length === 1) setMessage('msg.foundOne', {}, 'success');
     else setMessage('msg.foundMany', { count: moves.length }, 'success');
     $('solution').hidden = false;
@@ -245,18 +246,27 @@ function navigate(action) {
 
 function renderSolution() {
   if (!solution) return;
-  const { moves, step } = solution;
-  $('moves').replaceChildren(
-    ...moves.map((m, i) => {
-      const li = document.createElement('li');
-      li.textContent = moveToString(m);
-      if (i < step) li.className = 'done';
-      if (i === step) li.className = 'current';
-      li.title = describeMove(m, t);
-      return li;
-    }),
-  );
-  $('step-text').textContent = stepText(moves, step, t);
+  const { moves, step, marks = [] } = solution;
+  const items = [];
+  moves.forEach((m, i) => {
+    const mark = marks.find((k) => k.start === i);
+    if (mark) {
+      const title = document.createElement('li');
+      title.className = 'phase';
+      title.setAttribute('role', 'presentation');
+      title.textContent = t(`phase.${mark.phase}`);
+      items.push(title);
+    }
+    const li = document.createElement('li');
+    li.className = 'move';
+    li.textContent = moveToString(m);
+    if (i < step) li.classList.add('done');
+    if (i === step) li.classList.add('current');
+    li.title = describeMove(m, t);
+    items.push(li);
+  });
+  $('moves').replaceChildren(...items);
+  $('step-text').textContent = stepText(moves, step, t, phaseAt(marks, step));
   $('first').disabled = $('prev').disabled = step === 0;
   $('next').disabled = $('last').disabled = step === moves.length;
 }

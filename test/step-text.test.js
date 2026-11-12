@@ -35,3 +35,17 @@ test('english step text', () => {
   assert.equal(stepText(moves, 2, tEn), 'Step 3 of 3: R2 – right face half turn (180°)');
   assert.equal(stepText(moves, 3, tEn), 'Done – the cube is solved! 🎉');
 });
+
+test('4x4: step text names the phase; phases are flattened with marks', async () => {
+  const { flattenPhases, phaseAt } = await import('../src/step-text.js');
+  const [rw, u, f] = parseMovesN("Rw U F'");
+  const { moves, marks } = flattenPhases([{ phase: 'centers', moves: [rw, u] }, { phase: 'edges', moves: [f] }]);
+  assert.equal(moves.length, 3);
+  assert.deepEqual(marks, [{ phase: 'centers', start: 0 }, { phase: 'edges', start: 2 }]);
+  assert.equal(phaseAt(marks, 1), 'centers');
+  assert.equal(phaseAt(marks, 2), 'edges');
+  assert.equal(stepText(moves, 2, t, phaseAt(marks, 2)), "Kanten paaren · Schritt 3 von 3: F' – vordere Seite gegen den Uhrzeigersinn");
+  assert.equal(stepText(moves, 0, tEn, 'centers'), 'Centres · Step 1 of 3: Rw – right two layers clockwise');
+  assert.equal(stepText(moves, 3, t, 'edges'), 'Fertig – der Würfel ist gelöst! 🎉');
+  assert.deepEqual(flattenPhases([{ phase: 'solve', moves: [u] }]).marks, []);
+});
