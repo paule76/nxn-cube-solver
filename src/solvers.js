@@ -42,6 +42,9 @@ export function createSolvers({ createWorker = defaultWorker } = {}) {
     get failed() {
       return !!client?.failed;
     },
+    get cached() {
+      return client?.cached ?? null;
+    },
     whenReady: () => start3().ready,
     solve: (state) => start3().solve(state),
     randomScramble: () => start3().randomScramble(),

@@ -10,6 +10,7 @@ export function createSolverClient(worker) {
   let nextId = 1;
   let isReady = false;
   let failed = false;
+  let cached = null; // true: tables came from the browser cache
   const pending = new Map();
   let resolveReady;
   let rejectReady;
@@ -32,6 +33,7 @@ export function createSolverClient(worker) {
     switch (data?.type) {
       case 'ready':
         isReady = true;
+        cached = !!data.cached;
         resolveReady({ cached: !!data.cached });
         break;
       case 'solution':
@@ -76,6 +78,9 @@ export function createSolverClient(worker) {
     },
     get failed() {
       return failed;
+    },
+    get cached() {
+      return cached;
     },
     solve: (state) => request('solve', { state }),
     randomScramble: () => request('randomScramble', {}),

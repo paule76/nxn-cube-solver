@@ -6,6 +6,15 @@ const ctx = setup();
 const found = () => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent);
 const SCRAMBLE = "R U2 F' L D B2 R' U F2 D' L2 B U' R2 F";
 
+/** Solves a short 3x3 once so the worker is ready, then resets to solved (two clicks: confirm). */
+async function warmUp(p) {
+  await paint(p, stateAfter3('R U'));
+  await p.click('#solve');
+  await p.waitForFunction(found, null, { timeout: 20000 });
+  await p.click('#reset');
+  await p.click('#reset');
+}
+
 test('3x3: scramble, solve, play to the end -> solved; 3D matches the net', async () => {
   const p = await openPage(ctx, { hash: '#3x3' });
   await paint(p, stateAfter3(SCRAMBLE));
@@ -22,53 +31,62 @@ test('3x3: scramble, solve, play to the end -> solved; 3D matches the net', asyn
 });
 
 test('3x3: Lösen while the solver is being prepared solves automatically', async () => {
-  const p = await openPage(ctx, { hash: '#3x3' });
-  await paint(p, stateAfter3("R U F'"));
-  const messages = new Set();
-  await p.exposeFunction('__note', (m) => messages.add(m));
-  await p.evaluate(() => {
-    const el = document.getElementById('message');
-    new MutationObserver(() => window.__note(el.textContent)).observe(el, { childList: true, characterData: true, subtree: true });
+  const context = await ctx.browser.newContext({ locale: 'de-DE' });
+  // hold back the worker script so the click surely lands in the preparation phase
+  let release;
+  const held = new Promise((r) => {
+    release = r;
   });
+  await context.route('**/solver3/worker.js', async (route) => {
+    await held;
+    await route.continue();
+  });
+  const p = await context.newPage();
+  await p.goto(`${ctx.server.url}#3x3`);
+  await p.waitForFunction(() => !document.getElementById('solve').disabled);
+  await paint(p, stateAfter3("R U F'"));
   await p.click('#solve');
+  assert.equal(await text(p, '#message'), '3x3-Solver wird vorbereitet …');
+  release();
   await p.waitForFunction(found, null, { timeout: 20000 });
   assert.equal((await p.$$('#moves li')).length, 3);
-  // Either the tables were still being built (message shown) or already ready – both are fine,
-  // but if the preparing message appeared, the solution must have followed without another click.
-  assert.ok([...messages].some((m) => m.startsWith('Lösung gefunden')));
-  await closePage(p);
+  await context.close();
 });
 
-test('3x3: second visit loads the solver tables from the browser cache', async () => {
+test('3x3: the second visit uses the tables from the browser cache', async () => {
   const context = await ctx.browser.newContext({ locale: 'de-DE' });
-  const first = await context.newPage();
-  await first.goto(`${ctx.server.url}#3x3`);
-  await paint(first, stateAfter3('R U'));
-  await first.click('#solve');
-  await first.waitForFunction(found, null, { timeout: 20000 });
-  await first.close();
-  const second = await context.newPage();
-  const seen = [];
-  second.on('console', () => {});
-  await second.goto(`${ctx.server.url}#3x3`);
-  await paint(second, stateAfter3('R U'));
-  const t0 = Date.now();
-  await second.click('#solve');
-  seen.push(await text(second, '#message'));
-  await second.waitForFunction(found, null, { timeout: 20000 });
-  assert.ok(Date.now() - t0 < 1500, `${Date.now() - t0} ms`);
-  assert.ok(!seen.includes('3x3-Solver wird vorbereitet …'), seen.join(' | '));
+  const solveOnce = async () => {
+    const p = await context.newPage();
+    await p.goto(`${ctx.server.url}#3x3`);
+    await paint(p, stateAfter3('R U'));
+    await p.click('#solve');
+    await p.waitForFunction(found, null, { timeout: 20000 });
+    const state = await p.getAttribute('html', 'data-solver-tables');
+    await p.close();
+    return state;
+  };
+  assert.equal(await solveOnce(), 'built');
+  await new Promise((r) => setTimeout(r, 1500)); // let the first page finish writing the cache
+  assert.equal(await solveOnce(), 'cached');
   await context.close();
+});
+
+test('3x3: clicking Lösen twice shows only the latest answer and does not reset navigation', async () => {
+  const p = await openPage(ctx, { hash: '#3x3' });
+  await warmUp(p);
+  await paint(p, stateAfter3(SCRAMBLE));
+  await p.click('#solve');
+  await p.click('#solve');
+  await p.waitForFunction(found, null, { timeout: 20000 });
+  await p.click('#next');
+  await p.waitForTimeout(1500);
+  assert.match(await text(p, '#step-text'), /^Schritt 2 von/);
+  await closePage(p);
 });
 
 test('3x3: a stale answer is dropped when the input changed meanwhile', async () => {
   const p = await openPage(ctx, { hash: '#3x3' });
-  // warm up: make sure the solver is ready, so the guard after the search itself is exercised
-  await paint(p, stateAfter3('R U'));
-  await p.click('#solve');
-  await p.waitForFunction(found, null, { timeout: 20000 });
-  await p.click('#reset');
-  await p.click('#reset');
+  await warmUp(p); // the solver is ready, so the guard after the search itself is exercised
   await paint(p, stateAfter3(SCRAMBLE));
   await p.click('#solve');
   await p.click('.swatch[data-color="W"]');
@@ -81,11 +99,7 @@ test('3x3: a stale answer is dropped when the input changed meanwhile', async ()
 
 test('3x3: switching size during the search shows no stale result', async () => {
   const p = await openPage(ctx, { hash: '#3x3' });
-  await paint(p, stateAfter3('R U'));
-  await p.click('#solve');
-  await p.waitForFunction(found, null, { timeout: 20000 });
-  await p.click('#reset');
-  await p.click('#reset');
+  await warmUp(p);
   await paint(p, stateAfter3(SCRAMBLE));
   await p.click('#solve');
   await p.click('.size[data-size="2x2"]');

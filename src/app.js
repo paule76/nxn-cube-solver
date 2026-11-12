@@ -49,6 +49,8 @@ let solverReady = false; // the 2x2 tables are built right after the first paint
 const solvers = createSolvers();
 /** Bumped on every change of the input, so late solver answers can be recognised as stale. */
 let inputVersion = 0;
+/** Bumped on every solve request: only the answer to the latest request is shown. */
+let solveSeq = 0;
 let selected = 'W';
 let puzzle = PUZZLES[pickSize({ hash: location.hash, stored: storageGet(SIZE_KEY) })];
 // Fans the view interface out to all views; showMove waits for every view.
@@ -162,8 +164,8 @@ async function solve() {
     render();
     return;
   }
-  const token = { size: puzzle.id, version: inputVersion };
-  const isCurrent = () => token.size === puzzle.id && token.version === inputVersion;
+  const token = { size: puzzle.id, version: inputVersion, seq: ++solveSeq };
+  const isCurrent = () => token.size === puzzle.id && token.version === inputVersion && token.seq === solveSeq;
   const facelets = [...input];
   const solver = solvers.get(puzzle.id);
   clearSolution();
@@ -174,6 +176,7 @@ async function solve() {
       await solver.whenReady();
       if (!isCurrent()) return;
     }
+    markSolverState(solver);
     setMessage('msg.searching');
     const moves = await solver.solve(r.state);
     if (!isCurrent()) return; // input or size changed meanwhile
@@ -327,6 +330,13 @@ function setInputButtonsDisabled(disabled) {
   for (const id of ['scramble', 'reset', 'clear']) $(id).disabled = disabled;
   for (const btn of document.querySelectorAll('.size-switch .size')) btn.disabled = disabled;
   $('solve').disabled = disabled || !solverReady;
+}
+
+/** Exposes where the 3x3 tables came from (used by the browser tests). */
+function markSolverState(solver) {
+  if (solver.cached !== undefined && solver.cached !== null) {
+    document.documentElement.dataset.solverTables = solver.cached ? 'cached' : 'built';
+  }
 }
 
 /** 3x3 with a ready solver: a uniformly random state (inverse of its solution); otherwise random moves. */
