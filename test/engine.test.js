@@ -25,12 +25,12 @@ for (const n of [2, 3, 4]) {
 
   test(`n=${n}: every move x4 is identity, X X' identity, perms are bijections`, () => {
     const ms = createMoveSet(n);
-    assert.equal(ms.moves.length, 18);
+    assert.equal(ms.moves.length, n >= 4 ? 36 : 18);
     const start = [...Array(6 * n * n).keys()];
     for (const m of ms.moves) {
       const perm = ms.perm(m);
       assert.equal(new Set(perm).size, perm.length);
-      const inv = { face: m.face, turns: m.turns === 2 ? 2 : -m.turns };
+      const inv = { face: m.face, turns: m.turns === 2 ? 2 : -m.turns, depth: m.depth };
       assert.deepEqual(ms.applyAll(start, [m, inv]), start);
       if (m.turns === 1) assert.deepEqual(ms.applyAll(start, [m, m, m, m]), start);
     }
@@ -75,4 +75,38 @@ test('notation round trip for all 18 moves', () => {
   const s = "U U2 U' D D2 D' L L2 L' R R2 R' F F2 F' B B2 B'";
   assert.equal(parseMoves(s).map(moveToString).join(' '), s);
   assert.throws(() => parseMoves('X'));
+});
+
+// --- Wide moves (depth 2) -------------------------------------------------------
+
+test('n=4 has 36 moves; wide moves are bijections, x4 identity, X X\' identity', () => {
+  const ms = createMoveSet(4);
+  assert.equal(ms.moves.length, 36);
+  const start = [...Array(96).keys()];
+  for (const m of ms.moves) {
+    const perm = ms.perm(m);
+    assert.equal(new Set(perm).size, 96);
+    const inv = ms.moves.find((x) => x.face === m.face && (x.depth ?? 1) === (m.depth ?? 1) && x.turns === (m.turns === 2 ? 2 : -m.turns));
+    assert.deepEqual(ms.applyAll(start, [m, inv]), start);
+    if (m.turns === 1) assert.deepEqual(ms.applyAll(start, [m, m, m, m]), start);
+  }
+  assert.equal(createMoveSet(3).moves.length, 18);
+  assert.equal(createMoveSet(2).moves.length, 18);
+});
+
+test('Rw turns two layers, R only one (4x4)', () => {
+  const ms = createMoveSet(4);
+  const col = (f, face, c) => [0, 1, 2, 3].map((r) => f[FACES.indexOf(face) * 16 + r * 4 + c]).join('');
+  const r = ms.apply(solvedFacelets(4), parseMoves('R')[0]);
+  assert.deepEqual([col(r, 'F', 0), col(r, 'F', 1), col(r, 'F', 2), col(r, 'F', 3)], ['GGGG', 'GGGG', 'GGGG', 'YYYY']);
+  const rw = ms.apply(solvedFacelets(4), parseMoves('Rw')[0]);
+  assert.deepEqual([col(rw, 'F', 0), col(rw, 'F', 1), col(rw, 'F', 2), col(rw, 'F', 3)], ['GGGG', 'GGGG', 'YYYY', 'YYYY']);
+});
+
+test('wide notation round trip', () => {
+  const s = "Uw Uw2 Uw' Dw Dw2 Dw' Lw Lw2 Lw' Rw Rw2 Rw' Fw Fw2 Fw' Bw Bw2 Bw'";
+  assert.equal(parseMoves(s).map(moveToString).join(' '), s);
+  const m = parseMoves("Rw'")[0];
+  assert.deepEqual([m.face, m.turns, m.depth], ['R', -1, 2]);
+  assert.equal(moveToString(parseMoves('R')[0]), 'R');
 });
