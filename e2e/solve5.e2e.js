@@ -19,7 +19,7 @@ test('5x5: scramble, solve in phases, play to the end -> solved; 3D matches the 
   // step to the first two-layer turn: its arrow carries the "w" mark
   const labels = await p.$$eval('#moves li.move', (ls) => ls.map((l) => l.textContent));
   const wide = labels.findIndex((l) => l.includes('w'));
-  assert.ok(wide >= 0, 'a 4x4 solution contains two-layer turns');
+  assert.ok(wide >= 0, 'a 5x5 solution contains two-layer turns');
   for (let i = 0; i < wide; i++) {
     await p.click('#next');
     await p.waitForFunction((k) => document.getElementById('step-text').textContent.includes(`Schritt ${k} von`), i + 2);

@@ -3,8 +3,8 @@
 //  Z2: F/B-coloured centres onto F or B, keep Z1                 (Z2_MOVES, IDA*)
 //  Z3a: U and D centres on their own face, keep Z1 + Z2          (Z3_MOVES, exact table: 4900 states)
 //  Z3b: F/B and R/L centres on their own face, keep the rest     (Z3B_MOVES, IDA*)
-// IDA* uses max(h_x, h_t) from one distance table per centre kind. A node budget keeps Z1/Z2 fast:
-// when it runs out, the x-centres are solved first (optimal) and both kinds afterwards.
+// IDA* uses max(h_x, h_t) from one distance table per centre kind. Node budgets keep Z1/Z2 fast: several
+// routes (views, optimal / one kind first) share a budget that doubles each round, so none runs unbounded.
 // On a 5x5 all turns of one axis commute (U, Uw, Dw, D), so the search keeps them in one fixed order.
 import { createMoveSet, movesFor, ALL_MOVES, WIDE_MOVES } from '../engine/facelets.js';
 import { X_CENTER_FACELETS, T_CENTER_FACELETS } from '../puzzles/cube5.js';
@@ -172,26 +172,36 @@ function createStage(moves, x, t) {
   const n = moves.length;
   const follow = followTable(moves);
 
-  /** (Weighted) IDA* over both tables; returns move indices or null when the node budget runs out. */
-  function ida(kx, kt, budget, weight = 1) {
+  /** IDA* over both tables; returns move indices or null when the node budget runs out. */
+  function ida(kx, kt, budget) {
     const path = [];
     let nodes = 0;
+    const xd = x.dist;
+    const td = t.dist;
+    const xn = x.next;
+    const tn = t.next;
+    // children over the bound are skipped in the loop (no call); `last` = -1 at the root
     function dfs(kx, kt, g, bound, last) {
-      const h = Math.max(x.dist(kx), t.dist(kt));
-      if (h === 0) return true;
-      if (g + weight * h > bound) return false;
       if (++nodes > budget) throw nodes;
       const row = last * n;
+      const limit = bound - g - 1;
       for (let i = 0; i < n; i++) {
         if (last >= 0 && !follow[row + i]) continue;
+        const cx = xn(kx, i);
+        const hx = xd(cx);
+        if (hx > limit) continue;
+        const ct = tn(kt, i);
+        const ht = td(ct);
+        if (ht > limit) continue;
         path.push(i);
-        if (dfs(x.next(kx, i), t.next(kt, i), g + 1, bound, i)) return true;
+        if ((hx === 0 && ht === 0) || dfs(cx, ct, g + 1, bound, i)) return true;
         path.pop();
       }
       return false;
     }
+    if (Math.max(xd(kx), td(kt)) === 0) return path;
     try {
-      for (let bound = weight * Math.max(x.dist(kx), t.dist(kt)); bound < 90; bound++) {
+      for (let bound = Math.max(xd(kx), td(kt)); bound < 90; bound++) {
         if (dfs(kx, kt, 0, bound, -1)) return path;
       }
     } catch (e) {
@@ -215,6 +225,7 @@ function createStage(moves, x, t) {
   return {
     moves,
     h: (kx, kt) => Math.max(x.dist(kx), t.dist(kt)),
+    sum: (kx, kt) => x.dist(kx) + t.dist(kt),
     /** Optimal moves, or null if the node budget runs out. */
     optimal: (kx, kt, budget) => ida(kx, kt, budget),
     /** One kind first (optimal, `first` = 'x' or 't'), then both; null if the budget runs out. */
@@ -227,16 +238,12 @@ function createStage(moves, x, t) {
       const rest = ida(kx, kt, budget);
       return rest && [...pre, ...rest];
     },
-    /** Optimal within the budget; otherwise the first table's part first (optimal), then both. */
+    /** Optimal, x first or t first – whichever finishes within a budget that doubles each round. */
     solve(kx, kt, budget) {
-      const path = ida(kx, kt, budget);
-      if (path) return path;
-      const first = descend(x, kx);
-      for (const i of first) {
-        kx = x.next(kx, i);
-        kt = t.next(kt, i);
+      for (let b = budget; ; b *= 2) {
+        const path = ida(kx, kt, b) ?? this.split(kx, kt, 'x', b) ?? this.split(kx, kt, 't', b);
+        if (path) return path;
       }
-      return [...first, ...ida(kx, kt, Infinity)];
     },
   };
 }
@@ -338,8 +345,10 @@ export function createCenterSolver5({ nodeBudget = 1e5 } = {}) {
   }
 
   /**
-   * Runs `stage` in the cheapest of several views (each a whole-cube rotation): optimal within the node
-   * budget if possible, else one centre kind first and then both (budgeted), else x first without limit.
+   * Runs `stage` in one of several views (each a whole-cube rotation). Every view offers three routes:
+   * optimal, x-centres first, t-centres first. All routes get the same node budget, round by round, and
+   * the budget doubles each round – so the cheapest route wins and no single search runs unbounded.
+   * Views are tried by estimate (ties: the smaller sum of both estimates).
    * @returns {{ view, f, sc, moves }} moves in that view, f after them
    */
   function inBestView(stage, facelets, scheme, views) {
@@ -349,26 +358,22 @@ export function createCenterSolver5({ nodeBudget = 1e5 } = {}) {
         const f = view.facelets(facelets);
         const sc = view.scheme(scheme);
         const [a, b] = S.keys(f, sideOfScheme(sc));
-        return { view, f, sc, a, b, h: S.run.h(a, b) };
+        return { view, f, sc, a, b, h: S.run.h(a, b), sum: S.run.sum(a, b) };
       })
-      .sort((p, q) => p.h - q.h);
-    // optimal in some view, else one kind first (x or t, any view), else x first without a budget
-    const tries = [
-      ...options.map((c) => [c, () => S.run.optimal(c.a, c.b, nodeBudget)]),
-      ...options.flatMap((c) => ['x', 't'].map((k) => [c, () => S.run.split(c.a, c.b, k, nodeBudget)])),
-      [options[0], () => S.run.solve(options[0].a, options[0].b, 0)],
+      .sort((p, q) => p.h - q.h || p.sum - q.sum);
+    const routes = [
+      ...options.map((c) => [c, (budget) => S.run.optimal(c.a, c.b, budget)]),
+      ...options.flatMap((c) => ['x', 't'].map((k) => [c, (budget) => S.run.split(c.a, c.b, k, budget)])),
     ];
-    let chosen = null;
-    let path = null;
-    for (const [c, attempt] of tries) {
-      path = attempt();
-      if (path) {
-        chosen = c;
-        break;
+    for (let budget = nodeBudget; ; budget *= 2) {
+      for (const [c, attempt] of routes) {
+        const path = attempt(budget);
+        if (path) {
+          const moves = path.map((i) => S.run.moves[i]);
+          return { view: c.view, f: ENGINE.applyAll(c.f, moves), sc: c.sc, moves };
+        }
       }
     }
-    const moves = path.map((i) => S.run.moves[i]);
-    return { view: chosen.view, f: ENGINE.applyAll(chosen.f, moves), sc: chosen.sc, moves };
   }
 
   /**

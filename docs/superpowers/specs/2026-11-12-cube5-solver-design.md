@@ -11,17 +11,20 @@ Gültige 5x5-Stellungen in Phasen lösen, Anzeige wie beim 4x4. Danach gehen E1 
 - Weiter auf `feature/cube5-model`. Alle bisherigen Unit- und e2e-Tests bleiben grün.
 
 ## Ablauf (Phasen wie beim 4x4)
-1. **Mitten** – in drei Stufen wie beim 4x4 (U/D-Farben auf U/D · F/B-Farben auf F/B · alle auf ihre Seite),
-   je Stufe für x- und t-Mitten gemeinsam. Je Stufe: zuerst die x-Mitten mit den 4x4-Tabellen (die x-Mitten
-   verhalten sich unter allen 36 Zügen exakt wie die 4x4-Mitten), dann x + t zusammen per IDA* mit Heuristik
-   `max(h_x, h_t)` über die erlaubten Züge der Stufe; Knotenbudget mit Rückfall auf die erste gefundene Lösung.
-   Für Stufe 1 wird die günstigste der drei Achsen gewählt (U/D, R/L oder F/B zuerst) – die Stufen 2/3 folgen
-   der gewählten Achse (Ansicht über Würfeldrehung umbenannt, Ausgabe in echten Zügen).
+1. **Mitten** – x- und t-Mitten gemeinsam in vier Stufen: Z1 U/D-Farben auf U/D · Z2 F/B-Farben auf F/B ·
+   Z3a U und D fertig (exakte Tabelle, 70 × 70 Zustände) · Z3b die vier Seiten (IDA* mit exakten Teil-Tabellen
+   für F/B und R/L, die sich unter den Z3b-Zügen unabhängig verhalten). Z1/Z2: IDA* mit `max(h_x, h_t)`;
+   Z1 in allen drei Blickrichtungen (Achse U/D, R/L, F/B), Z2 mit beiden Seitenpaaren; je Blickrichtung drei Wege
+   (optimal, erst x-Mitten, erst t-Mitten) mit gemeinsamem Knotenbudget, das sich jede Runde verdoppelt – so gewinnt
+   der günstigste Weg und keine Suche läuft unbegrenzt. Züge derselben Achse vertauschen beim 5x5; die Suche hält
+   sie in fester Reihenfolge (U < Uw < Dw < D). Ausgabe in echten Zügen (Blickrichtung zurückübersetzt).
 2. **Kanten paaren** – je Kante die Mittelkante als Anker, die zwei Kantenstücke dazu: gierig wie beim 4x4
    (Aufstellung · Uw/Dw · kurze Folge · zurück), Zielmaß gepaarte Kantenstücke (0–24); Mitten bleiben gelöst.
    Letzte Kanten: dieselbe Suche mit längeren Aufstellungen. Bleibt nichts zu gewinnen → Fehler (nie falsche Lösung).
-3. **Parität** – falls bei einer Kante die zwei Kantenstücke vertauscht sind: feste Folge
-   (r2 B2 U2 l U2 r' U2 r U2 F2 r F2 l' B2 r2 mit r = Rw R'), per Test auf dem 5x5 geprüft. Eine PLL-Parität gibt es beim 5x5 nicht.
+3. **Parität** – ist die Vertauschung der Kantenstücke ungerade: feste 15-Zug-Folge
+   (`Rw' U2 Lw F2 Lw' F2 Rw2 U2 Rw U2 Rw' U2 F2 Rw2 F2`, dieselbe wie die 4x4-OLL-Parität; per Test auf dem 5x5 geprüft)
+   auf eine ungepaarte Kante, danach wird weiter gepaart – diese Züge stehen mit in der Phase „Parität“.
+   Eine PLL-Parität gibt es beim 5x5 nicht.
 4. **Wie ein 3x3 lösen** – reduzierter 3x3 (Ecken, Mittelkanten, feste Mitten) mit dem Kociemba-Solver; nur äußere Züge.
 
 Jede Gesamtlösung wird am Ausgangszustand geprüft; Fehler → Fehlermeldung, nie eine falsche Lösung.

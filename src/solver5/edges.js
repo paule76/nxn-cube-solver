@@ -148,7 +148,8 @@ export function createEdgePairer5() {
   }
 
   /**
-   * @returns {{ edges: object[], parity: object[] }} pairing moves; parity moves (setup · algorithm · undo) if needed
+   * @returns {{ edges: object[], parity: object[] }} pairing moves; parity moves (setup · algorithm · undo) if needed.
+   *   Pairing steps after the parity algorithm stay in `parity`, so the moves keep their order in two phases.
    * @throws if the edges cannot be paired (never returns an unpaired cube)
    */
   function pairEdges(start, { maxSteps = 40 } = {}) {
