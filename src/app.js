@@ -4,7 +4,7 @@ import { moveToString } from './engine/facelets.js';
 import { PUZZLES, PUZZLE_IDS } from './puzzles/index.js';
 import { pickSize, sizeFromHash, SIZE_KEY } from './size.js';
 import { createStepper } from './stepper.js';
-import { stepText, describeMove } from './step-text.js';
+import { stepText, describeMove, flattenPhases, phaseAt } from './step-text.js';
 import { createPlayer } from './player.js';
 import { keyAction } from './keys.js';
 import { createConfirm } from './confirm.js';
@@ -170,24 +170,44 @@ async function solve() {
   const solver = solvers.get(puzzle.id);
   clearSolution();
   render();
+  if (!solver) {
+    setMessage('msg.solverFailed', {}, 'error');
+    return;
+  }
   try {
     if (!solver.isReady) {
-      setMessage('msg.preparing3');
-      await solver.whenReady();
+      setMessage(puzzle.id === '4x4' ? 'msg.preparing4' : 'msg.preparing3');
+      await withTimeout(solver.whenReady(), PREPARE_TIMEOUT_MS);
       if (!isCurrent()) return;
     }
+  } catch {
+    if (isCurrent()) setMessage('msg.solverFailed', {}, 'error');
+    return;
+  }
+  try {
     markSolverState(solver);
     setMessage('msg.searching');
-    const moves = await solver.solve(r.state);
+    const phases = await solver.solve(r.state, facelets);
     if (!isCurrent()) return; // input or size changed meanwhile
-    solution = { facelets, moves, step: 0 };
+    const { moves, marks } = flattenPhases(phases);
+    solution = { facelets, moves, marks, step: 0 };
     if (moves.length === 1) setMessage('msg.foundOne', {}, 'success');
     else setMessage('msg.foundMany', { count: moves.length }, 'success');
     $('solution').hidden = false;
     render();
   } catch {
-    if (isCurrent()) setMessage('msg.solverFailed', {}, 'error');
+    if (isCurrent()) setMessage('msg.solveFailed', {}, 'error');
   }
+}
+
+/** A worker killed without an error event would otherwise leave "preparing …" forever. */
+const PREPARE_TIMEOUT_MS = 60000;
+function withTimeout(promise, ms) {
+  let timer;
+  const limit = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('timeout')), ms);
+  });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
 }
 
 // --- Navigation and autoplay ------------------------------------------------------
@@ -241,18 +261,39 @@ function navigate(action) {
 
 function renderSolution() {
   if (!solution) return;
-  const { moves, step } = solution;
-  $('moves').replaceChildren(
-    ...moves.map((m, i) => {
-      const li = document.createElement('li');
-      li.textContent = moveToString(m);
-      if (i < step) li.className = 'done';
-      if (i === step) li.className = 'current';
-      li.title = describeMove(m, t);
-      return li;
-    }),
-  );
-  $('step-text').textContent = stepText(moves, step, t);
+  const { moves, step, marks = [] } = solution;
+  const moveItem = (m, i) => {
+    const li = document.createElement('li');
+    li.className = 'move';
+    li.textContent = moveToString(m);
+    if (i < step) li.classList.add('done');
+    if (i === step) li.classList.add('current');
+    li.title = describeMove(m, t);
+    return li;
+  };
+  if (!marks.length) {
+    $('moves').replaceChildren(...moves.map(moveItem));
+  } else {
+    // one list item per phase: heading + its own list of moves
+    $('moves').replaceChildren(
+      ...marks.map((mark, k) => {
+        const end = k + 1 < marks.length ? marks[k + 1].start : moves.length;
+        const group = document.createElement('li');
+        group.className = 'phase-group';
+        const title = document.createElement('h3');
+        title.className = 'phase';
+        title.id = `phase-${k}`;
+        title.textContent = t(`phase.${mark.phase}`);
+        const list = document.createElement('ol');
+        list.className = 'moves';
+        list.setAttribute('aria-labelledby', title.id);
+        for (let i = mark.start; i < end; i++) list.append(moveItem(moves[i], i));
+        group.append(title, list);
+        return group;
+      }),
+    );
+  }
+  $('step-text').textContent = stepText(moves, step, t, phaseAt(marks, step));
   $('first').disabled = $('prev').disabled = step === 0;
   $('next').disabled = $('last').disabled = step === moves.length;
 }
@@ -342,7 +383,7 @@ function markSolverState(solver) {
 /** 3x3 with a ready solver: a uniformly random state (inverse of its solution); otherwise random moves. */
 async function scrambleMoves(p) {
   const solver = solvers.get(p.id);
-  if (solver.randomScramble && solver.isReady) {
+  if (solver?.randomScramble && solver.isReady) {
     try {
       return await solver.randomScramble();
     } catch {

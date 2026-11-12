@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSolverClient } from '../src/solver3/client.js';
 import { createSolvers } from '../src/solvers.js';
-import { ALL_MOVES } from '../src/engine/facelets.js';
+import { ALL_MOVES, WIDE_MOVES } from '../src/engine/facelets.js';
 import { PUZZLES } from '../src/puzzles/index.js';
 
 function fakeWorker() {
@@ -65,7 +65,7 @@ test('solvers: 2x2 is ready at once, 3x3 starts its worker lazily', async () => 
   assert.equal(s2.isReady, true);
   const p = PUZZLES['2x2'];
   const scrambled = p.parse(p.applyMoves(p.solvedFacelets(), p.scramble())).state;
-  assert.ok((await s2.solve(scrambled)).length > 0);
+  assert.ok((await s2.solve(scrambled))[0].moves.length > 0);
   assert.equal(created, 0);
   const s3 = solvers.get('3x3');
   assert.equal(s3.isReady, false);
@@ -77,6 +77,56 @@ test('solvers: 2x2 is ready at once, 3x3 starts its worker lazily', async () => 
   assert.equal(s3.isReady, true);
 });
 
+test('client: solve4 sends facelets, prepare4 once, phases come back with 4x4 move instances', async () => {
+  const w = fakeWorker();
+  const c = createSolverClient(w);
+  c.prepare4();
+  c.prepare4();
+  assert.equal(w.sent.filter((m) => m.type === 'prepare4').length, 1);
+  assert.equal(c.isReady4, false);
+  w.reply({ type: 'ready', cached: true });
+  w.reply({ type: 'ready4' });
+  await c.ready4;
+  assert.equal(c.isReady4, true);
+  const p = c.solve4(['W']);
+  const msg = w.sent.find((m) => m.type === 'solve4');
+  assert.deepEqual(msg.facelets, ['W']);
+  w.reply({ type: 'solution4', id: msg.id, phases: [{ phase: 'centers', moves: [{ face: 'R', turns: 1, depth: 2 }, { face: 'U', turns: 2, depth: 1 }] }] });
+  const [phase] = await p;
+  assert.equal(phase.phase, 'centers');
+  assert.equal(phase.moves[0], WIDE_MOVES.find((m) => m.face === 'R' && m.turns === 1));
+  assert.equal(phase.moves[1], ALL_MOVES.find((m) => m.face === 'U' && m.turns === 2));
+});
+
+test('solvers: every size answers in phases; 4x4 prepares its tables in the worker', async () => {
+  let worker;
+  const solvers = createSolvers({ createWorker: () => (worker = fakeWorker()) });
+  const p = PUZZLES['2x2'];
+  const f = p.applyMoves(p.solvedFacelets(), p.scramble());
+  const phases = await solvers.get('2x2').solve(p.parse(f).state, f);
+  assert.equal(phases.length, 1);
+  assert.equal(phases[0].phase, 'solve');
+  assert.deepEqual(await solvers.get('2x2').solve(p.parse(p.solvedFacelets()).state, p.solvedFacelets()), []);
+  const s4 = solvers.get('4x4');
+  assert.ok(s4);
+  solvers.start('4x4');
+  assert.ok(worker.sent.some((m) => m.type === 'prepare4'));
+  worker.reply({ type: 'ready', cached: true });
+  assert.equal(s4.isReady, false);
+  worker.reply({ type: 'ready4' });
+  await s4.whenReady();
+  assert.equal(s4.isReady, true);
+  const answer = s4.solve({}, ['W']);
+  const msg = worker.sent.find((m) => m.type === 'solve4');
+  worker.reply({ type: 'solution4', id: msg.id, phases: [{ phase: 'edges', moves: [{ face: 'F', turns: -1, depth: 1 }] }] });
+  assert.equal((await answer)[0].phase, 'edges');
+});
+
+test('solvers: sizes without a solver return undefined', () => {
+  const solvers = createSolvers({ createWorker: () => fakeWorker() });
+  assert.equal(solvers.get('9x9'), undefined);
+});
+
 test('solvers: a worker that cannot be created reports failure', async () => {
   const solvers = createSolvers({ createWorker: () => { throw new Error('no workers'); } });
   const s3 = solvers.get('3x3');
@@ -84,4 +134,24 @@ test('solvers: a worker that cannot be created reports failure', async () => {
   assert.equal(s3.failed, true);
   await assert.rejects(s3.whenReady());
   await assert.rejects(s3.solve({}));
+});
+
+test('client: a failed 4x4 preparation leaves the 3x3 solver working and can be retried', async () => {
+  const w = fakeWorker();
+  const c = createSolverClient(w);
+  w.reply({ type: 'ready', cached: true });
+  const first = c.prepare4();
+  w.reply({ type: 'error4', message: 'out of memory' });
+  await assert.rejects(first, /out of memory/);
+  assert.equal(c.failed, false);
+  assert.equal(c.isReady4, false);
+  const s = c.solve({});
+  w.reply({ type: 'solution', id: w.sent.at(-1).id, moves: [] });
+  assert.deepEqual(await s, []);
+  const second = c.prepare4();
+  assert.notEqual(second, first);
+  assert.equal(w.sent.filter((m) => m.type === 'prepare4').length, 2);
+  w.reply({ type: 'ready4' });
+  await second;
+  assert.equal(c.isReady4, true);
 });

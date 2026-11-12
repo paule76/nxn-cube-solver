@@ -7,6 +7,7 @@ import { startServer } from './server.js';
 import { SOLVED, toFacelets, applyMoves, parseMoves } from '../src/cube.js';
 import { createMoveSet, parseMoves as parseMovesN } from '../src/engine/facelets.js';
 import { SOLVED3, toFacelets3 } from '../src/puzzles/cube3.js';
+import { SOLVED4, toFacelets4 } from '../src/puzzles/cube4.js';
 
 /** Starts server + browser once per test file; returns accessors. */
 export function setup() {
@@ -71,3 +72,7 @@ export const text = (page, sel) => page.textContent(sel);
 export const counterVisible = (page) => page.evaluate(() => !document.querySelector('.turn-count').hidden);
 export const rotatedCubies = (page) =>
   page.$$eval('.cube3d .cubie', (cs) => cs.filter((c) => /rotate[XYZ]\((?!0deg)/.test(c.style.transform)).length);
+
+/** 4x4 facelets after applying a move string (outer and wide moves) to the solved cube. */
+export const stateAfter4 = (moves) =>
+  createMoveSet(4).applyAll(toFacelets4(SOLVED4), parseMovesN(moves)).join('');

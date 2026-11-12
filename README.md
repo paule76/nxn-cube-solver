@@ -10,8 +10,9 @@ Statische Web-App zum Eingeben, Prüfen, Mischen und Lösen von Zauberwürfeln �
 |---|---|---|---|
 | 2x2 | ✅ | ✅ | ✅ optimal (höchstens 11 Züge) |
 | 3x3 | ✅ | ✅ (zufälliger Zustand) | ✅ kurz, meist ≤ 20 Züge (Kociemba); erklärte Anfänger-Methode folgt (Teilprojekt C) |
+| 4x4 | ✅ | ✅ (40 Züge inkl. Doppelschicht) | ✅ in Phasen (Reduktion), meist 70–100 Züge |
 
-Die Größe wählt man oben im Eingabebereich (**2x2 | 3x3**). Sie steht auch in der Adresse (`#2x2`, `#3x3`), sodass man direkt verlinken kann; die Zurück-Taste des Browsers wechselt die Größe. Jede Größe merkt sich ihre Eingabe.
+Die Größe wählt man oben im Eingabebereich (**2x2 | 3x3 | 4x4**). Sie steht auch in der Adresse (`#2x2`, `#3x3`, `#4x4`), sodass man direkt verlinken kann; die Zurück-Taste des Browsers wechselt die Größe. Jede Größe merkt sich ihre Eingabe.
 
 ## Bedienung
 
@@ -32,7 +33,7 @@ Zum Üben erzeugt **Zufällig mischen** eine Mischung und zeigt sie animiert: be
 - Netz und 3D-Würfel heben dasselbe Feld hervor (Maus über Netz-Feld bzw. Klick auf 3D-Sticker).
 - **Tastatur:** ← / → Zurück / Weiter, Pos1 / Ende, Leertaste = Abspielen / Pause.
 
-Notation: `R` = rechte Seite im Uhrzeigersinn (mit Blick auf die Seite), `R'` = gegen den Uhrzeigersinn, `R2` = halbe Drehung; Seiten U D L R F B. Unterstützt wird das Standard-Farbschema (Weiß↔Gelb, Grün↔Blau, Rot↔Orange gegenüber).
+Notation: `R` = rechte Seite im Uhrzeigersinn (mit Blick auf die Seite), `R'` = gegen den Uhrzeigersinn, `R2` = halbe Drehung; Seiten U D L R F B. Beim 4x4 dreht `Rw` die rechten zwei Schichten zusammen (WCA-Notation). Unterstützt wird das Standard-Farbschema (Weiß↔Gelb, Grün↔Blau, Rot↔Orange gegenüber).
 
 ## Aufbau
 
@@ -42,6 +43,7 @@ Notation: `R` = rechte Seite im Uhrzeigersinn (mit Blick auf die Seite), `R'` = 
 | `src/puzzles/` | Puzzle-Module je Größe (`cube2.js`, `cube3.js`): Prüfung, Mischen, Solver |
 | `src/cube.js`, `src/solver.js` | 2x2-Modell und optimaler 2x2-Solver (Distanztabelle über 3.674.160 Zustände) |
 | `src/solver3/` | 3x3-Solver: Kociemba-Koordinaten, Zug-/Pruning-Tabellen, Zwei-Phasen-Suche, Zufallszustände, Web Worker, IndexedDB-Cache |
+| `src/solver4/` | 4x4-Solver: Mitten (`centers.js`), Kanten paaren (`edges.js`), Parität und 3x3-Sicht (`parity.js`), Gesamtablauf (`reduce.js`) |
 | `src/solvers.js` | einheitliche asynchrone Solver-Schnittstelle je Größe |
 | `src/views/` | Netz- und 3D-Ansicht (CSS-3D) für beliebiges N |
 | `src/app.js` | Bedienung, Größenwahl, Zustand je Größe |
@@ -61,6 +63,18 @@ spätestens nach 0,5 s. Kurze Mischungen bekommen so fast immer eine ebenso kurz
 
 Die Tabellen (~3,8 MB) berechnet ein Web Worker beim ersten Besuch im Hintergrund (Desktop ~1 s, Handy einige Sekunden);
 danach liegen sie in IndexedDB und sind beim nächsten Besuch sofort da. Die Seite bleibt währenddessen bedienbar.
+
+## 4x4-Solver
+
+Der 4x4 wird durch Reduktion auf einen 3x3 gelöst; die Lösung wird in Phasen mit Überschriften angezeigt:
+
+1. **Mitten** – in drei Stufen, jede optimal über eine Distanztabelle (Breitensuche über Bitmasken der 24 Mittelfelder).
+2. **Kanten paaren** – je Schritt die Folge *Aufstellung · Doppelschicht · kurze Folge · Doppelschicht zurück*, die pro Zug die meisten Kanten paart; die Mitten bleiben dabei gelöst.
+3. **Parität** – falls nötig: eine feste Folge kippt ein Kantenpaar (OLL-Parität), eine andere vertauscht zwei (PLL-Parität).
+4. **Wie ein 3x3 lösen** – mit dem Kociemba-Solver oben, nur äußere Züge.
+
+Jede Lösung wird vor der Anzeige am Ausgangszustand geprüft. In Node: im Mittel ~85 Züge (max. ~105), ~0,35 s je Würfel;
+die Tabellen baut der Web Worker beim Wechsel auf 4x4 in ~1–2 s auf.
 
 ## Lokal starten
 

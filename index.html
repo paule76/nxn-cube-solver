@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title data-i18n="meta.title">Würfel-Löser</title>
-  <meta name="description" id="meta-description" content="Gib die Farben deines Zauberwürfels (2x2 oder 3x3) ein und erhalte eine kurze Lösung Schritt für Schritt – mit 3D-Animation.">
+  <meta name="description" id="meta-description" content="Gib die Farben deines Zauberwürfels (2x2, 3x3 oder 4x4) ein und erhalte eine kurze Lösung Schritt für Schritt – mit 3D-Animation.">
   <link rel="stylesheet" href="style.css">
   <script type="module" src="src/app.js"></script>
 </head>
@@ -18,7 +18,7 @@
           <button type="button" class="lang" data-lang="en" lang="en" aria-pressed="false">EN</button>
         </div>
       </div>
-      <p class="lead" data-i18n="app.lead">Wähle die Größe, färbe das Netz wie deinen Würfel ein und drücke „Lösen“. 2x2: kürzeste Lösung · 3x3: kurze Lösung (meist ≤ 20 Züge).</p>
+      <p class="lead" data-i18n="app.lead">Wähle die Größe, färbe das Netz wie deinen Würfel ein und drücke „Lösen“. 2x2: kürzeste Lösung · 3x3: kurze Lösung (meist ≤ 20 Züge) · 4x4: in Phasen (meist 70–100 Züge).</p>
     </header>
 
     <section class="panel" aria-labelledby="input-title">
@@ -26,6 +26,7 @@
       <div class="size-switch" role="group" data-i18n-attr="aria-label:size.label" aria-label="Würfelgröße">
         <button type="button" class="size" data-size="2x2" aria-pressed="false">2x2</button>
         <button type="button" class="size" data-size="3x3" aria-pressed="false">3x3</button>
+        <button type="button" class="size" data-size="4x4" aria-pressed="false">4x4</button>
       </div>
       <div class="palette" id="palette" role="radiogroup" data-i18n-attr="aria-label:palette.label" aria-label="Farbe wählen"></div>
       <div class="views">

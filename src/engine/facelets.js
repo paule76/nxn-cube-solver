@@ -9,21 +9,33 @@ export const ALL_MOVES = Object.freeze(
   MOVE_FACES.flatMap((face) => TURNS.map((turns) => Object.freeze({ face, turns }))),
 );
 
+/** The 18 two-layer moves (WCA: Uw Uw2 Uw' … Bw'), for cubes of size 4 and up. */
+export const WIDE_MOVES = Object.freeze(
+  MOVE_FACES.flatMap((face) => TURNS.map((turns) => Object.freeze({ face, turns, depth: 2 }))),
+);
+
+/** Moves available on an n×n×n cube. */
+export const movesFor = (n) => (n >= 4 ? Object.freeze([...ALL_MOVES, ...WIDE_MOVES]) : ALL_MOVES);
+
+const depthOf = (move) => move.depth ?? 1;
+const findMove = (face, turns, depth) =>
+  (depth === 2 ? WIDE_MOVES : ALL_MOVES).find((m) => m.face === face && m.turns === turns);
+
 export function moveToString(move) {
-  return move.face + (move.turns === 2 ? '2' : move.turns === -1 ? "'" : '');
+  return move.face + (depthOf(move) === 2 ? 'w' : '') + (move.turns === 2 ? '2' : move.turns === -1 ? "'" : '');
 }
 
-/** Parses e.g. "R U2 F'" into move objects (shared instances from ALL_MOVES). */
+/** Parses e.g. "R U2 Fw'" into move objects (shared instances from ALL_MOVES / WIDE_MOVES). */
 export function parseMoves(str) {
   return str
     .trim()
     .split(/\s+/)
     .filter(Boolean)
     .map((tok) => {
-      const m = /^([UDLRFB])(2|')?$/.exec(tok);
+      const m = /^([UDLRFB])(w)?(2|')?$/.exec(tok);
       if (!m) throw new Error(`Unknown move: ${tok}`);
-      const turns = m[2] === '2' ? 2 : m[2] === "'" ? -1 : 1;
-      return ALL_MOVES.find((x) => x.face === m[1] && x.turns === turns);
+      const turns = m[3] === '2' ? 2 : m[3] === "'" ? -1 : 1;
+      return findMove(m[1], turns, m[2] ? 2 : 1);
     });
 }
 
@@ -37,12 +49,13 @@ export function createMoveSet(n) {
   const index = new Map(stickers.map((s, i) => [key(s.position, s.normal), i]));
   const perms = new Map();
 
-  for (const move of ALL_MOVES) {
+  const moves = movesFor(n);
+  for (const move of moves) {
     const { axis, degrees } = rotation(move);
     const perm = new Int16Array(stickers.length);
     stickers.forEach((s, i) => {
       let j = i;
-      if (inLayer(s.position, move.face, n)) {
+      if (inLayer(s.position, move.face, n, depthOf(move))) {
         j = index.get(key(rotateVec(s.position, axis, degrees), rotateVec(s.normal, axis, degrees)));
       }
       perm[j] = i; // new facelet j comes from old facelet i
@@ -50,14 +63,14 @@ export function createMoveSet(n) {
     perms.set(move, perm);
   }
 
-  const permOf = (move) => perms.get(ALL_MOVES.find((m) => m.face === move.face && m.turns === move.turns));
+  const permOf = (move) => perms.get(findMove(move.face, move.turns, depthOf(move)));
   const apply = (facelets, move) => {
     const perm = permOf(move);
     return Array.from(perm, (from) => facelets[from]);
   };
   return {
     n,
-    moves: ALL_MOVES,
+    moves,
     perm: permOf,
     apply,
     applyAll: (facelets, moves) => moves.reduce(apply, [...facelets]),

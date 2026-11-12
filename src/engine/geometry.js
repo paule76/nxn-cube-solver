@@ -46,10 +46,10 @@ export function createGeometry(n) {
   return Object.freeze({ n, stickers: Object.freeze(stickers), cubies: Object.freeze(cubies) });
 }
 
-/** True if the cubie at `position` belongs to the outer layer of `face`. */
-export function inLayer(position, face, n) {
+/** True if the cubie at `position` belongs to the outer `depth` layers of `face` (depth 1: outer layer only). */
+export function inLayer(position, face, n, depth = 1) {
   const v = FACE_NORMALS[face];
-  return position[0] * v[0] + position[1] * v[1] + position[2] * v[2] === n - 1;
+  return position[0] * v[0] + position[1] * v[1] + position[2] * v[2] >= n - 1 - 2 * (depth - 1);
 }
 
 const AXIS_OF = { U: 'y', D: 'y', R: 'x', L: 'x', F: 'z', B: 'z' };

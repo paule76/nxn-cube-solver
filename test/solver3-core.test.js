@@ -66,3 +66,20 @@ test('a failing cache never blocks the solver', async () => {
   const s = randomState();
   assert.ok(isSolved3(applyMoves3(s, core.solve(s))));
 });
+
+test('solve4: five 4x4 scrambles solved in phases', async () => {
+  const { cube4 } = await import('../src/puzzles/cube4.js');
+  const cache = fakeCache(good);
+  const core = createSolverCore({ load: () => cache.load(), save: (b) => cache.save(b), clear: () => cache.clear() });
+  await core.init();
+  core.prepare4();
+  for (let i = 0; i < 5; i++) {
+    const f = cube4.applyMoves(cube4.solvedFacelets(), cube4.scramble());
+    const phases = core.solve4(f);
+    assert.ok(phases.length >= 2);
+    assert.ok(phases.every((p) => ['centers', 'edges', 'parity', 'solve3'].includes(p.phase) && p.moves.length));
+    const end = cube4.applyMoves(f, phases.flatMap((p) => p.moves));
+    assert.ok(cube4.isSolved(cube4.parse(end).state));
+  }
+  assert.throws(() => core.solve4(cube4.solvedFacelets().map((c, i) => (i === 0 ? 'X' : c))));
+});

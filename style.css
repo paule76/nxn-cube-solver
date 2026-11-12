@@ -115,7 +115,7 @@ h2 { font-size: 1.15rem; margin: 0 0 12px; }
   width: var(--cell); height: var(--cell);
   padding: 0;
   border: 1px solid rgba(0, 0, 0, 0.35);
-  border-radius: 6px;
+  border-radius: min(6px, calc(var(--cell) * 0.2)); /* stays square-ish on small 4x4 cells */
   background: var(--cell-empty);
   cursor: pointer;
 }
@@ -151,7 +151,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   display: flex; flex-wrap: wrap; gap: 6px;
   padding: 0; margin: 0 0 12px;
 }
-.moves li {
+.moves li.phase-group { flex-basis: 100%; }
+.moves .moves { margin: 0; }
+.moves .phase {
+  margin: 6px 0;
+  font-size: 1em;
+  font-weight: 600;
+  color: var(--muted);
+}
+.moves li.phase-group:first-child .phase { margin-top: 0; }
+.moves li.move {
   min-width: 2.6em;
   text-align: center;
   padding: 4px 8px;
@@ -316,3 +325,15 @@ button.small:not(.cell):not(.swatch) { font-size: 0.875rem; padding: 4px 10px; }
 }
 .site-footer a { color: var(--muted); }
 .site-footer a:hover { color: var(--accent); }
+
+/* "w" marker on the arrow for two-layer moves (Rw …) */
+.cube3d .hint-arrow .arrow-wide {
+  display: none;
+  font: 700 26px system-ui, sans-serif;
+  fill: #fff;
+  text-anchor: middle;
+  dominant-baseline: central;
+  filter: drop-shadow(0 0 2px #000);
+}
+.cube3d .hint-arrow.wide .arrow-wide { display: inline; }
+.cube3d .hint-arrow.ccw .arrow-wide { transform: scaleX(-1); transform-origin: 80px 80px; }

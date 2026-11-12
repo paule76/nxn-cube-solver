@@ -31,6 +31,7 @@ const ARROW_SVG = `<svg viewBox="0 0 100 100" aria-hidden="true">
     <polygon points="22,34 12,54 32,54" />
   </g>
   <text x="50" y="50" class="arrow-double">2</text>
+  <text x="80" y="80" class="arrow-wide">w</text>
 </svg>`;
 
 /**
@@ -216,7 +217,7 @@ export function createCube3dView(container, { n = 2, onStickerClick = () => {} }
       const stale = () => gen !== my;
       hint.hidden = true;
       const { axis, degrees } = rotation(move);
-      const layer = cubies.filter((c) => inLayer(c.position, move.face, n));
+      const layer = cubies.filter((c) => inLayer(c.position, move.face, n, move.depth ?? 1));
       const target = degrees * direction;
       setLayer(layer, axis, 0, 0);
       if (!isFaceVisible(move.face, camera) && followFace(move.face) && !reducedMotion()) {
@@ -247,6 +248,7 @@ export function createCube3dView(container, { n = 2, onStickerClick = () => {} }
       hint.dataset.face = move.face;
       hint.classList.toggle('ccw', move.turns === -1);
       hint.classList.toggle('double', move.turns === 2);
+      hint.classList.toggle('wide', (move.depth ?? 1) === 2);
       hint.style.transform = `${FACE_TRANSFORMS[move.face]} translateZ(calc(var(--cube) / 2 + 3px))`;
     },
     highlight(index) {
