@@ -1,10 +1,10 @@
 // Page side of the 3x3 solver worker: turns messages into promises.
 import { ALL_MOVES, movesFor } from '../engine/facelets.js';
 
-const MOVES4 = movesFor(4);
+const MOVES_N = movesFor(4); // outer and two-layer turns (same objects for n = 4 and 5)
 const toMoves = (list) => list.map((m) => ALL_MOVES.find((x) => x.face === m.face && x.turns === m.turns));
-const toMoves4 = (list) =>
-  list.map((m) => MOVES4.find((x) => x.face === m.face && x.turns === m.turns && (x.depth ?? 1) === (m.depth ?? 1)));
+const toMovesN = (list) =>
+  list.map((m) => MOVES_N.find((x) => x.face === m.face && x.turns === m.turns && (x.depth ?? 1) === (m.depth ?? 1)));
 
 /**
  * @param {{ postMessage(msg: object): void, onmessage?: Function, onerror?: Function }} worker
@@ -22,17 +22,15 @@ export function createSolverClient(worker) {
     rejectReady = reject;
   });
   ready.catch(() => {}); // handled by callers that await it
-  let isReady4 = false;
-  let ready4 = null; // created by prepare4()
-  let resolveReady4;
-  let rejectReady4;
+  // 4x4/5x5 table preparation per size n: { promise, ready, resolve, reject }
+  const big = new Map();
 
   function fail(message) {
     if (failed) return;
     failed = true;
     const error = new Error(message);
     rejectReady(error);
-    rejectReady4?.(error);
+    for (const b of big.values()) b.reject(error);
     for (const p of pending.values()) p.reject(error);
     pending.clear();
   }
@@ -44,15 +42,19 @@ export function createSolverClient(worker) {
         cached = !!data.cached;
         resolveReady({ cached: !!data.cached });
         break;
-      case 'ready4':
-        isReady4 = true;
-        resolveReady4?.();
+      case 'readyBig': {
+        const b = big.get(data.n);
+        if (b) {
+          b.ready = true;
+          b.resolve();
+        }
         break;
-      case 'solution4': {
+      }
+      case 'solutionBig': {
         const p = pending.get(data.id);
         if (p) {
           pending.delete(data.id);
-          p.resolve(data.phases.map(({ phase, moves }) => ({ phase, moves: toMoves4(moves) })));
+          p.resolve(data.phases.map(({ phase, moves }) => ({ phase, moves: toMovesN(moves) })));
         }
         break;
       }
@@ -65,12 +67,11 @@ export function createSolverClient(worker) {
         }
         break;
       }
-      case 'error4': {
-        // only the 4x4 preparation failed: reject it and allow a new attempt later
-        const reject = rejectReady4;
-        ready4 = null;
-        isReady4 = false;
-        reject?.(new Error(data.message ?? '4x4 solver error'));
+      case 'errorBig': {
+        // only this size's preparation failed: reject it and allow a new attempt later
+        const b = big.get(data.n);
+        big.delete(data.n);
+        b?.reject(new Error(data.message ?? `${data.n}x${data.n} solver error`));
         break;
       }
       case 'error':
@@ -110,28 +111,25 @@ export function createSolverClient(worker) {
     get cached() {
       return cached;
     },
-    get isReady4() {
-      return isReady4;
-    },
-    /** Asks the worker to build the 4x4 tables (once); resolves when they are ready. */
-    prepare4() {
-      if (!ready4) {
-        ready4 = new Promise((resolve, reject) => {
-          resolveReady4 = resolve;
-          rejectReady4 = reject;
+    /** True once the tables for size n (4 or 5) are built. */
+    isReadyBig: (n) => !!big.get(n)?.ready,
+    /** Asks the worker to build the tables for size n (once); resolves when they are ready. */
+    prepareBig(n) {
+      if (!big.has(n)) {
+        const b = { ready: false };
+        b.promise = new Promise((resolve, reject) => {
+          b.resolve = resolve;
+          b.reject = reject;
         });
-        ready4.catch(() => {});
-        if (failed) rejectReady4(new Error('solver failed'));
-        else worker.postMessage({ type: 'prepare4' });
+        b.promise.catch(() => {});
+        big.set(n, b);
+        if (failed) b.reject(new Error('solver failed'));
+        else worker.postMessage({ type: 'prepareBig', n });
       }
-      return ready4;
-    },
-    /** The pending or finished 4x4 preparation (null before prepare4). */
-    get ready4() {
-      return ready4;
+      return big.get(n).promise;
     },
     solve: (state) => request('solve', { state }),
-    solve4: (facelets) => request('solve4', { facelets }),
+    solveBig: (n, facelets) => request('solveBig', { n, facelets }),
     randomScramble: () => request('randomScramble', {}),
   };
 }

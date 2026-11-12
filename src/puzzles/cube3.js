@@ -65,14 +65,14 @@ const STANDARD_TRIPLES = CORNER_COLORS.map((cc) => cc.map((s) => DEFAULT_SCHEME[
 const isRotationOfStandard = (a, b, c) =>
   [a + b + c, b + c + a, c + a + b].some((t) => STANDARD_TRIPLES.includes(t));
 
-function centersOk(scheme) {
+export function centersOk(scheme) {
   const colors = FACES.map((f) => scheme[f]);
   if (new Set(colors).size !== 6 || colors.some((c) => !OPPOSITE_COLOR[c])) return false;
   if (FACES.some((f) => scheme[OPPOSITE_FACE[f]] !== OPPOSITE_COLOR[scheme[f]])) return false;
   return isRotationOfStandard(scheme.U, scheme.R, scheme.F); // rejects mirrored schemes
 }
 
-function findPiece(sides, pieces) {
+export function findPiece(sides, pieces) {
   const len = sides.length;
   for (let p = 0; p < pieces.length; p++) {
     for (let o = 0; o < len; o++) {
@@ -82,7 +82,7 @@ function findPiece(sides, pieces) {
   return null;
 }
 
-const inversions = (perm) => {
+export const inversions = (perm) => {
   let n = 0;
   for (let i = 0; i < perm.length; i++) for (let j = i + 1; j < perm.length; j++) if (perm[i] > perm[j]) n++;
   return n;

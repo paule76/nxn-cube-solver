@@ -6,6 +6,7 @@ import { createSearch } from './search.js';
 import { randomState, inverseMoves } from './random-state.js';
 import { SOLVED3, applyMove3, applyMoves3, isSolved3 } from '../puzzles/cube3.js';
 import { createSolver4 } from '../solver4/reduce.js';
+import { createSolver5 } from '../solver5/reduce.js';
 
 const safely = (fn) => Promise.resolve().then(fn).catch(() => null);
 
@@ -36,7 +37,9 @@ function tablesLookRight(T) {
  */
 export function createSolverCore({ load, save, clear, build = buildTables }) {
   let search = null;
-  let solver4 = null; // built on first use (~1 s); its 3x3 stage uses the verified 3x3 solver
+  // 4x4/5x5 solvers, built on first use (~1–2 s each); their 3x3 stage uses the verified 3x3 solver
+  const big = {};
+  const createBig = { 4: createSolver4, 5: createSolver5 };
   let saved = Promise.resolve();
 
   function rebuild({ dropCache }) {
@@ -47,11 +50,11 @@ export function createSolverCore({ load, save, clear, build = buildTables }) {
   }
 
   /** Solves and verifies; a wrong result means wrong tables: rebuild once and try again. */
-  function verifiedSolve(state) {
-    let moves = search.solve(state);
+  function verifiedSolve(state, options) {
+    let moves = search.solve(state, options);
     if (isSolved3(applyMoves3(state, moves))) return moves;
     rebuild({ dropCache: true });
-    moves = search.solve(state);
+    moves = search.solve(state, options);
     if (isSolved3(applyMoves3(state, moves))) return moves;
     throw new Error('solver produced an invalid solution');
   }
@@ -75,14 +78,15 @@ export function createSolverCore({ load, save, clear, build = buildTables }) {
       return { cached: false };
     },
     solve: verifiedSolve,
-    /** Builds the 4x4 tables (after init). */
-    prepare4() {
-      solver4 ??= createSolver4((state) => verifiedSolve(state));
+    /** Builds the tables of the 4x4 (n = 4) or 5x5 (n = 5) solver (after init). */
+    prepare(n) {
+      if (!createBig[n]) throw new Error(`no solver for n = ${n}`);
+      big[n] ??= createBig[n]((state, options) => verifiedSolve(state, options));
     },
-    /** 4x4 in phases; the solver checks the result on the given facelets and throws on any error. */
-    solve4(facelets) {
-      this.prepare4();
-      return solver4.solve(facelets).phases;
+    /** 4x4/5x5 in phases; the solver checks the result on the given facelets and throws on any error. */
+    solveBig(n, facelets) {
+      this.prepare(n);
+      return big[n].solve(facelets).phases;
     },
     randomScramble: () => inverseMoves(verifiedSolve(randomState())),
     /** Resolves when the last cache write has finished (for tests). */
