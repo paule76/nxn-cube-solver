@@ -72,8 +72,9 @@ folgt.“ (nur auf dem Branch sichtbar).
   Ohne Hash: zuletzt gewählte Größe (localStorage `cube-solver-size`), beim ersten Besuch 3x3.
 - Zustand je Größe: Eingabe, Lösung, Schritt bleiben beim Wechsel erhalten.
   Beim Wechsel: Autoplay stoppt, laufende Animation wird abgebrochen, offene Rückfragen zurückgesetzt.
-- Netz: Kreuz-Layout mit N×N Feldern; Feldgröße passt sich an (3x3: min. ~22 px), kein
-  horizontales Scrollen bei 360 px. Mittelsteine beim 3x3 sind normale, einfärbbare Felder.
+- Netz: Kreuz-Layout mit N×N Feldern; Feldgröße passt sich an, kein horizontales Scrollen bei 360 px.
+  **Entscheidung (nach Review):** 3x3-Felder sind auf 375-px-Handys ~18 px (unter WCAG 2.5.8, 24 px);
+  das Kreuz-Layout bleibt bewusst erhalten (keine alternative Anordnung für schmale Bildschirme). Mittelsteine beim 3x3 sind normale, einfärbbare Felder.
 - 3D-Würfel: alle äußeren Steine (3x3: 26), Größe skaliert mit N; Pfeil, Halbdrehungs-Zähler
   und Animation für alle sechs Seiten.
 - Verdeckte Seiten: Maßgeblich ist die **tatsächliche Sichtbarkeit** aus dem aktuellen
