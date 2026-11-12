@@ -1,12 +1,12 @@
-import { SOLVED, toFacelets, parseFacelets, applyMove, applyMoves, moveToString, isSolved } from './cube.js';
-import { createSolver } from './solver.js';
 import { createNetView } from './views/net-view.js';
 import { createCube3dView } from './views/cube3d-view.js';
+import { moveToString } from './engine/facelets.js';
+import { PUZZLES, PUZZLE_IDS } from './puzzles/index.js';
+import { pickSize, sizeFromHash, SIZE_KEY } from './size.js';
 import { createStepper } from './stepper.js';
 import { stepText, describeMove } from './step-text.js';
 import { createPlayer } from './player.js';
 import { keyAction } from './keys.js';
-import { randomScramble } from './scramble.js';
 import { createConfirm } from './confirm.js';
 import { createI18n, detectLang, LANGS } from './i18n.js';
 import { formatParseError } from './messages.js';
@@ -15,43 +15,70 @@ const COLORS = ['W', 'Y', 'G', 'B', 'R', 'O'];
 
 const $ = (id) => document.getElementById(id);
 
-// --- Language ---------------------------------------------------------------
-
-const LANG_KEY = 'cube-solver-lang';
-function readStoredLang() {
+function storageGet(key) {
   try {
-    return localStorage.getItem(LANG_KEY);
+    return localStorage.getItem(key);
   } catch {
     return null;
   }
 }
+function storageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // storage unavailable (private mode etc.): the choice just isn't remembered
+  }
+}
+
+// --- Language ---------------------------------------------------------------
+
+const LANG_KEY = 'cube-solver-lang';
 const i18n = createI18n({
   lang: detectLang({
-    stored: readStoredLang(),
+    stored: storageGet(LANG_KEY),
     navigatorLanguages: navigator.languages?.length ? navigator.languages : [navigator.language],
   }),
 });
 const t = i18n.t;
 const colorName = (c) => t(c ? `color.${c}` : 'color.empty');
 
-let solver = null;
+// --- Puzzle and per-size state ------------------------------------------------
+
+let solverReady = false;
 let selected = 'W';
-let input = toFacelets(SOLVED);
-/** @type {null | { state, scheme, moves: object[], step: number }} */
+let puzzle = PUZZLES[pickSize({ hash: location.hash, stored: storageGet(SIZE_KEY) })];
+/** Input and solution are kept per size, so switching back restores them. */
+const sessions = {};
+const sessionFor = (p) => (sessions[p.id] ??= { input: p.solvedFacelets(), solution: null });
+let input = sessionFor(puzzle).input;
+/** @type {null | { facelets: string[], moves: object[], step: number }} */
 let solution = null;
 
-const net = createNetView($('net'), {
-  n: 2,
-  onCellClick,
-  onCellHover: (index) => cube3d.highlight(index),
-  cellLabel: (side, n, color) => t('cell.label', { side: t(`side.${side}`), n, color: colorName(color) }),
-  sideName: (side) => t(`side.${side}`),
-});
-const cube3d = createCube3dView($('cube3d'), {
-  n: 2,
-  onStickerClick: (index) => net.highlight(index),
-});
-const views = [net, cube3d];
+// --- Views --------------------------------------------------------------------
+
+let net;
+let cube3d;
+let views = [];
+
+function buildViews() {
+  // The 3D view attaches listeners to its container, so it always gets a fresh element.
+  const old = $('cube3d');
+  const fresh = old.cloneNode(false);
+  old.replaceWith(fresh);
+  net = createNetView($('net'), {
+    n: puzzle.size,
+    onCellClick,
+    onCellHover: (index) => cube3d.highlight(index),
+    cellLabel: (side, n, color) => t('cell.label', { side: t(`side.${side}`), n, color: colorName(color) }),
+    sideName: (side) => t(`side.${side}`),
+  });
+  cube3d = createCube3dView(fresh, {
+    n: puzzle.size,
+    onStickerClick: (index) => net.highlight(index),
+  });
+  fresh.setAttribute('aria-label', t('cube3d.label'));
+  views = [net, cube3d];
+}
 
 // Fans the view interface out to all views; showMove waits for every view.
 const view = {
@@ -62,8 +89,10 @@ const view = {
 
 function displayed() {
   if (!solution) return input;
-  return toFacelets(applyMoves(solution.state, solution.moves.slice(0, solution.step)), solution.scheme);
+  return puzzle.applyMoves(solution.facelets, solution.moves.slice(0, solution.step));
 }
+
+// --- Messages -------------------------------------------------------------------
 
 /** The message is kept as a function so it can be re-translated when the language changes. */
 let message = { text: () => '', kind: '', key: '' };
@@ -83,6 +112,8 @@ function renderMessage() {
   el.textContent = message.text();
   el.className = `message ${message.kind}`.trim();
 }
+
+// --- Input and solving ------------------------------------------------------------
 
 function onCellClick(index) {
   if (scrambling) return;
@@ -104,28 +135,36 @@ function clearSolution() {
 }
 
 function solve() {
-  if (!solver) return;
+  if (!solverReady) return;
   player.pause();
-  const r = parseFacelets(input);
+  const r = puzzle.parse(input);
   if (!r.ok) {
     clearSolution();
     setErrorMessage(r);
     render();
     return;
   }
-  const moves = solver.solve(r.state);
-  if (moves.length === 0) {
+  if (puzzle.isSolved(r.state)) {
     clearSolution();
     setMessage('msg.alreadySolved', {}, 'success');
     render();
     return;
   }
-  solution = { state: r.state, scheme: r.scheme, moves, step: 0 };
+  if (!puzzle.solve) {
+    clearSolution();
+    setMessage('msg.validNoSolver', {}, 'success');
+    render();
+    return;
+  }
+  const moves = puzzle.solve(r.state);
+  solution = { facelets: [...input], moves, step: 0 };
   if (moves.length === 1) setMessage('msg.foundOne', {}, 'success');
   else setMessage('msg.foundMany', { count: moves.length }, 'success');
   $('solution').hidden = false;
   render();
 }
+
+// --- Navigation and autoplay ------------------------------------------------------
 
 const stepper = createStepper(view, () => solution);
 
@@ -146,7 +185,7 @@ const player = createPlayer({
     return !atEnd();
   },
   setTimeout: (fn, ms) => setTimeout(fn, ms),
-  clearTimeout: (t) => clearTimeout(t),
+  clearTimeout: (id) => clearTimeout(id),
   onChange: renderPlayButton,
 });
 
@@ -173,12 +212,12 @@ function navigate(action) {
   goTo(target);
 }
 
+// --- Rendering --------------------------------------------------------------------
 
 function renderSolution() {
   if (!solution) return;
   const { moves, step } = solution;
-  const list = $('moves');
-  list.replaceChildren(
+  $('moves').replaceChildren(
     ...moves.map((m, i) => {
       const li = document.createElement('li');
       li.textContent = moveToString(m);
@@ -203,10 +242,17 @@ function renderPalette() {
   }
 }
 
+function renderSizeSwitch() {
+  for (const btn of document.querySelectorAll('.size-switch .size')) {
+    btn.setAttribute('aria-pressed', String(btn.dataset.size === puzzle.id));
+  }
+}
+
 function render() {
   view.render(displayed());
   view.showHint(solution && solution.step < solution.moves.length ? solution.moves[solution.step] : null);
   renderPalette();
+  renderSizeSwitch();
   renderSolution();
 }
 
@@ -234,49 +280,45 @@ function buildPalette() {
   });
 }
 
-buildPalette();
-$('solve').addEventListener('click', () => {
-  resetConfirms();
-  solve();
-});
-$('reset-camera').addEventListener('click', () => cube3d.resetCamera());
+// --- Reset, clear, scramble ---------------------------------------------------------
+
 function resetToSolved() {
-  input = toFacelets(SOLVED);
+  input = puzzle.solvedFacelets();
   clearSolution();
   setMessage(null);
   render();
 }
 
 function clearInput() {
-  input = new Array(24).fill(null);
+  input = new Array(6 * puzzle.size * puzzle.size).fill(null);
   clearSolution();
   setMessage(null);
   render();
 }
 
-// --- Scramble -------------------------------------------------------------
-
 let scrambling = false;
 
 function setInputButtonsDisabled(disabled) {
   for (const id of ['scramble', 'reset', 'clear']) $(id).disabled = disabled;
-  $('solve').disabled = disabled || !solver;
+  for (const btn of document.querySelectorAll('.size-switch .size')) btn.disabled = disabled;
+  $('solve').disabled = disabled || !solverReady;
 }
 
 async function scramble() {
-  const moves = randomScramble();
+  const moves = puzzle.scramble();
+  const p = puzzle;
   scrambling = true;
   setInputButtonsDisabled(true);
   try {
     clearSolution();
     setMessage('msg.scrambling');
-    let state = SOLVED;
-    input = toFacelets(state);
+    let facelets = p.solvedFacelets();
+    input = facelets;
     render();
     for (const m of moves) {
       await view.showMove(m, 1, { countHalfTurns: false }); // counting only helps when solving
-      state = applyMove(state, m);
-      input = toFacelets(state);
+      facelets = p.applyMoves(facelets, [m]);
+      input = facelets;
       render();
     }
     setMessage('msg.scrambled', { moves: moves.map(moveToString).join(' ') });
@@ -286,12 +328,12 @@ async function scramble() {
   }
 }
 
-// --- Confirmation before overwriting the input ----------------------------
+// --- Confirmation before overwriting the input --------------------------------------
 
 const isEmpty = () => input.every((c) => !c);
 const isSolvedInput = () => {
-  const r = parseFacelets(input);
-  return r.ok && isSolved(r.state);
+  const r = puzzle.parse(input);
+  return r.ok && puzzle.isSolved(r.state);
 };
 const NEEDS_CONFIRM = {
   clear: () => !isEmpty(),
@@ -305,7 +347,7 @@ for (const id of Object.keys(ACTIONS)) {
   const button = $(id);
   confirms[id] = createConfirm({
     setTimeout: (fn, ms) => setTimeout(fn, ms),
-    clearTimeout: (t) => clearTimeout(t),
+    clearTimeout: (handle) => clearTimeout(handle),
     onArm: () => {
       button.textContent = t(`confirm.${id}`);
       button.classList.add('danger');
@@ -330,6 +372,40 @@ function resetConfirms(except) {
   for (const [id, c] of Object.entries(confirms)) if (id !== except) c.reset();
 }
 
+// --- Size switch ------------------------------------------------------------------
+
+function switchSize(id, { push }) {
+  if (!PUZZLE_IDS.includes(id) || id === puzzle.id || scrambling) return;
+  player.pause();
+  resetConfirms();
+  view.render(displayed()); // cancels a running animation in the old views
+  Object.assign(sessionFor(puzzle), { input, solution });
+  puzzle = PUZZLES[id];
+  ({ input, solution } = sessionFor(puzzle));
+  storageSet(SIZE_KEY, id);
+  if (push) history.pushState(null, '', `#${id}`);
+  buildViews();
+  $('solution').hidden = !solution;
+  if (message.key !== 'msg.init') setMessage(null);
+  render();
+}
+
+for (const btn of document.querySelectorAll('.size-switch .size')) {
+  btn.addEventListener('click', () => switchSize(btn.dataset.size, { push: true }));
+}
+window.addEventListener('hashchange', () => {
+  const id = sizeFromHash(location.hash);
+  if (id) switchSize(id, { push: false });
+});
+
+// --- Remaining controls -------------------------------------------------------------
+
+buildPalette();
+$('solve').addEventListener('click', () => {
+  resetConfirms();
+  solve();
+});
+$('reset-camera').addEventListener('click', () => cube3d.resetCamera());
 for (const action of ['first', 'prev', 'next', 'last']) {
   $(action).addEventListener('click', () => navigate(action));
 }
@@ -342,7 +418,8 @@ document.addEventListener('keydown', (e) => {
   e.preventDefault();
   navigate(action);
 });
-// --- Static texts and language switch ---------------------------------------
+
+// --- Static texts and language switch ---------------------------------------------
 
 function applyLanguage() {
   document.documentElement.lang = i18n.lang;
@@ -373,22 +450,23 @@ for (const btn of document.querySelectorAll('.lang-switch .lang')) {
   btn.addEventListener('click', () => {
     if (!LANGS.includes(btn.dataset.lang)) return;
     i18n.setLang(btn.dataset.lang);
-    try {
-      localStorage.setItem(LANG_KEY, i18n.lang);
-    } catch {
-      // storage unavailable (private mode etc.): the choice just isn't remembered
-    }
+    storageSet(LANG_KEY, i18n.lang);
     applyLanguage();
   });
 }
 
+// --- Start --------------------------------------------------------------------------
+
+history.replaceState(null, '', `#${puzzle.id}`);
+buildViews();
 setMessage('msg.init');
 applyLanguage();
 render();
 
-// Let the page paint before the ~0.5 s table build.
+// Let the page paint before the ~0.5 s table build of the 2x2 solver.
 setTimeout(() => {
-  solver = createSolver();
+  for (const p of Object.values(PUZZLES)) p.prepare?.();
+  solverReady = true;
   $('solve').disabled = scrambling;
   if (message.key === 'msg.init') setMessage('msg.ready');
 }, 0);

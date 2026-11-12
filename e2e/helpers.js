@@ -5,6 +5,8 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { startServer } from './server.js';
 import { SOLVED, toFacelets, applyMoves, parseMoves } from '../src/cube.js';
+import { createMoveSet, parseMoves as parseMovesN } from '../src/engine/facelets.js';
+import { SOLVED3, toFacelets3 } from '../src/puzzles/cube3.js';
 
 /** Starts server + browser once per test file; returns accessors. */
 export function setup() {
@@ -59,6 +61,10 @@ export const cubeColors = sortedColors('.cube3d .sticker');
 
 /** 2x2 facelets after applying a move string to the solved cube. */
 export const stateAfter = (moves) => toFacelets(applyMoves(SOLVED, parseMoves(moves))).join('');
+
+/** 3x3 facelets after applying a move string (all six faces) to the solved cube. */
+export const stateAfter3 = (moves) =>
+  createMoveSet(3).applyAll(toFacelets3(SOLVED3), parseMovesN(moves)).join('');
 
 export const SCRAMBLE_11 = "R U2 F' R U' R2 F U R' F2 U";
 export const text = (page, sel) => page.textContent(sel);

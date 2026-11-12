@@ -295,11 +295,15 @@ button.small:not(.cell):not(.swatch) { font-size: 0.875rem; padding: 4px 10px; }
 
 /* Header with language switch */
 .header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.lang-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-.lang-switch button.lang:not(.cell):not(.swatch) {
+.lang-switch, .size-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.lang-switch button.lang:not(.cell):not(.swatch),
+.size-switch button.size:not(.cell):not(.swatch) {
   border: 0; border-radius: 0; padding: 4px 10px; font-size: 0.875rem; font-weight: 600;
 }
-.lang-switch button.lang[aria-pressed="true"]:not(.cell):not(.swatch) { background: var(--accent); color: var(--accent-text); }
+.size-switch button.size:not(.cell):not(.swatch) { padding: 6px 16px; font-size: 1rem; }
+.lang-switch button.lang[aria-pressed="true"]:not(.cell):not(.swatch),
+.size-switch button.size[aria-pressed="true"]:not(.cell):not(.swatch) { background: var(--accent); color: var(--accent-text); }
+.size-switch { margin-bottom: 12px; }
 
 /* Footer */
 .site-footer {
