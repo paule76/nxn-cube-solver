@@ -41,12 +41,14 @@ let input = toFacelets(SOLVED);
 let solution = null;
 
 const net = createNetView($('net'), {
+  n: 2,
   onCellClick,
   onCellHover: (index) => cube3d.highlight(index),
   cellLabel: (side, n, color) => t('cell.label', { side: t(`side.${side}`), n, color: colorName(color) }),
   sideName: (side) => t(`side.${side}`),
 });
 const cube3d = createCube3dView($('cube3d'), {
+  n: 2,
   onStickerClick: (index) => net.highlight(index),
 });
 const views = [net, cube3d];

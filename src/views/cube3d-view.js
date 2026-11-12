@@ -1,6 +1,6 @@
-// 3D view: the cube as 8 CSS-3D cubies. Implements the view interface
+// 3D view: the cube as CSS-3D cubies (any size n). Implements the view interface
 // { render(facelets), showMove(move, direction), showHint(move|null), highlight(index|null) }.
-import { STICKERS, CUBIES, FACE_NORMALS, inLayer, rotation, cssRotate } from '../geometry.js';
+import { createGeometry, FACE_NORMALS, inLayer, rotation, cssRotate } from '../engine/geometry.js';
 
 const DEFAULT_CAMERA = { x: -25, y: -35 };
 const DRAG_THRESHOLD = 5; // px before a press counts as camera drag
@@ -34,14 +34,16 @@ const ARROW_SVG = `<svg viewBox="0 0 100 100" aria-hidden="true">
 
 /**
  * @param {HTMLElement} container
- * @param {{ onStickerClick?(index: number): void }} [options]
+ * @param {{ n?: number, onStickerClick?(index: number): void }} [options]
  */
-export function createCube3dView(container, { onStickerClick = () => {} } = {}) {
+export function createCube3dView(container, { n = 2, onStickerClick = () => {} } = {}) {
+  const { stickers: STICKERS, cubies: CUBIES } = createGeometry(n);
   const camera = { ...DEFAULT_CAMERA };
-  const stickers = new Array(24);
+  const stickers = new Array(STICKERS.length);
   const cubies = [];
 
   container.classList.add('cube3d');
+  container.style.setProperty('--n', String(n));
   container.setAttribute('role', 'img');
   container.setAttribute('aria-label', '3D-Ansicht des Würfels (ziehen zum Drehen)');
   const scene = document.createElement('div');
@@ -148,7 +150,7 @@ export function createCube3dView(container, { onStickerClick = () => {} } = {}) 
     counter.hidden = !face;
     if (!face) return;
     counter.textContent = String(n);
-    counter.style.transform = `${FACE_TRANSFORMS[face]} translateZ(calc(var(--s) + 4px))`;
+    counter.style.transform = `${FACE_TRANSFORMS[face]} translateZ(calc(var(--cube) / 2 + 4px))`;
   }
 
   function setLayer(layer, axis, deg, ms) {
@@ -193,7 +195,7 @@ export function createCube3dView(container, { onStickerClick = () => {} } = {}) 
       const stale = () => gen !== my;
       hint.hidden = true;
       const { axis, degrees } = rotation(move);
-      const layer = cubies.filter((c) => inLayer(c.position, move.face));
+      const layer = cubies.filter((c) => inLayer(c.position, move.face, n));
       const target = degrees * direction;
       setLayer(layer, axis, 0, 0);
       if (reducedMotion()) return;
@@ -219,7 +221,7 @@ export function createCube3dView(container, { onStickerClick = () => {} } = {}) 
       hint.dataset.face = move.face;
       hint.classList.toggle('ccw', move.turns === -1);
       hint.classList.toggle('double', move.turns === 2);
-      hint.style.transform = `${FACE_TRANSFORMS[move.face]} translateZ(calc(var(--s) + 3px))`;
+      hint.style.transform = `${FACE_TRANSFORMS[move.face]} translateZ(calc(var(--cube) / 2 + 3px))`;
     },
     highlight(index) {
       stickers.forEach((s, i) => s.classList.toggle('highlighted', i === index));

@@ -19,7 +19,6 @@
   --c-R: #b71234;
   --c-O: #ff5800;
 
-  --cell: clamp(26px, 7.2vw, 44px);
   --gap: 3px;
 }
 
@@ -88,8 +87,11 @@ h2 { font-size: 1.15rem; margin: 0 0 12px; }
 
 .net {
   display: grid;
-  grid-template-columns: repeat(4, calc(var(--cell) * 2 + var(--gap)));
-  grid-template-rows: repeat(3, calc(var(--cell) * 2 + var(--gap)));
+  --n: 2;
+  /* cell size shrinks with the cube size so the cross always fits a phone */
+  --cell: clamp(calc(52px / var(--n)), calc(14.4vw / var(--n)), calc(88px / var(--n)));
+  grid-template-columns: repeat(4, calc(var(--cell) * var(--n) + var(--gap) * (var(--n) - 1)));
+  grid-template-rows: repeat(3, calc(var(--cell) * var(--n) + var(--gap) * (var(--n) - 1)));
   gap: 18px;
   justify-content: center;
   margin: 8px 0 16px;
@@ -97,8 +99,8 @@ h2 { font-size: 1.15rem; margin: 0 0 12px; }
 .face {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(2, var(--cell));
-  grid-template-rows: repeat(2, var(--cell));
+  grid-template-columns: repeat(var(--n), var(--cell));
+  grid-template-rows: repeat(var(--n), var(--cell));
   gap: var(--gap);
 }
 .face-label {
@@ -190,11 +192,13 @@ button.small:not(.cell):not(.swatch) { font-size: 0.875rem; padding: 4px 10px; }
 
 /* 3D cube */
 .cube3d {
-  --s: clamp(52px, 16vw, 72px);  /* cubie edge */
+  --n: 2;
+  --cube: clamp(104px, 32vw, 144px); /* edge length of the whole cube */
+  --s: calc(var(--cube) / var(--n)); /* cubie edge */
   --h: calc(var(--s) / 2);
-  width: calc(var(--s) * 4);
-  height: calc(var(--s) * 4);
-  perspective: calc(var(--s) * 14);
+  width: calc(var(--cube) * 2);
+  height: calc(var(--cube) * 2);
+  perspective: calc(var(--cube) * 7);
   touch-action: none;
   user-select: none;
   cursor: grab;
@@ -232,8 +236,8 @@ button.small:not(.cell):not(.swatch) { font-size: 0.875rem; padding: 4px 10px; }
 .cube3d .hint-arrow {
   position: absolute;
   left: 50%; top: 50%;
-  width: calc(var(--s) * 2); height: calc(var(--s) * 2);
-  margin: calc(var(--s) * -1) 0 0 calc(var(--s) * -1);
+  width: var(--cube); height: var(--cube);
+  margin: calc(var(--cube) / -2) 0 0 calc(var(--cube) / -2);
   pointer-events: none;
   backface-visibility: hidden;
 }
@@ -278,10 +282,10 @@ button.small:not(.cell):not(.swatch) { font-size: 0.875rem; padding: 4px 10px; }
 .cube3d .turn-count {
   position: absolute;
   left: 50%; top: 50%;
-  width: calc(var(--s) * 2); height: calc(var(--s) * 2);
-  margin: calc(var(--s) * -1) 0 0 calc(var(--s) * -1);
+  width: var(--cube); height: var(--cube);
+  margin: calc(var(--cube) / -2) 0 0 calc(var(--cube) / -2);
   display: flex; align-items: center; justify-content: center;
-  font: 800 calc(var(--s) * 1.1) / 1 system-ui, sans-serif;
+  font: 800 calc(var(--cube) * 0.55) / 1 system-ui, sans-serif;
   color: #fff;
   text-shadow: 0 0 4px #000, 0 0 2px #000;
   pointer-events: none;

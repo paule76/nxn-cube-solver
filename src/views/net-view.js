@@ -1,32 +1,36 @@
 // Net view: the cube unfolded as a cross. Implements the view interface
 // { render(facelets), showMove(move, direction), highlight(index|null) }.
 
-// Face letter -> first facelet index, and grid placement (column, row) in the cross.
-const FACES = [
-  { face: 'U', start: 0, col: 2, row: 1 },
-  { face: 'L', start: 16, col: 1, row: 2 },
-  { face: 'F', start: 8, col: 2, row: 2 },
-  { face: 'R', start: 4, col: 3, row: 2 },
-  { face: 'B', start: 20, col: 4, row: 2 },
-  { face: 'D', start: 12, col: 2, row: 3 },
+// Face letter -> position in the facelet order (U R F D L B) and grid placement in the cross.
+const LAYOUT = [
+  { face: 'U', order: 0, col: 2, row: 1 },
+  { face: 'L', order: 4, col: 1, row: 2 },
+  { face: 'F', order: 2, col: 2, row: 2 },
+  { face: 'R', order: 1, col: 3, row: 2 },
+  { face: 'B', order: 5, col: 4, row: 2 },
+  { face: 'D', order: 3, col: 2, row: 3 },
 ];
 
 
 /**
  * @param {HTMLElement} container
- * @param {{ onCellClick(index: number): void, onCellHover?(index: number|null): void,
+ * @param {{ n?: number, onCellClick(index: number): void, onCellHover?(index: number|null): void,
  *           cellLabel?(side: string, n: number, color: string|null): string,
  *           sideName?(side: string): string }} options
  */
 export function createNetView(container, {
+  n = 2,
   onCellClick,
   onCellHover = () => {},
   cellLabel = (side, n, color) => `${side} ${n}: ${color ?? '-'}`,
   sideName = (side) => side,
 }) {
+  const per = n * n;
+  const FACES = LAYOUT.map((f) => ({ ...f, start: f.order * per }));
   const labels = [];
-  const cells = new Array(24);
+  const cells = new Array(6 * per);
   container.classList.add('net');
+  container.style.setProperty('--n', String(n));
   container.replaceChildren();
 
   for (const { face, start, col, row } of FACES) {
@@ -39,7 +43,7 @@ export function createNetView(container, {
     label.textContent = face;
     labels.push([label, face]);
     el.append(label);
-    for (let k = 0; k < 4; k++) {
+    for (let k = 0; k < per; k++) {
       const index = start + k;
       const cell = document.createElement('button');
       cell.type = 'button';
@@ -62,7 +66,7 @@ export function createNetView(container, {
       facelets.forEach((color, i) => {
         const cell = cells[i];
         cell.dataset.color = color ?? '';
-        const face = FACES.find((f) => i >= f.start && i < f.start + 4);
+        const face = FACES.find((f) => i >= f.start && i < f.start + per);
         cell.setAttribute('aria-label', cellLabel(face.face, i - face.start + 1, color));
       });
     },
