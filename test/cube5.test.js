@@ -76,7 +76,9 @@ test('scramble: 60 moves, no same face twice, no X-opposite-X', () => {
       if (i > 1) assert.ok(!(s[i].face === s[i - 2].face && OPP[s[i].face] === s[i - 1].face));
     }
     const f = cube5.applyMoves(solved(), s);
-    assert.ok(parse5(f).ok);
+    const p = parse5(f);
+    assert.ok(p.ok);
+    assert.deepEqual(toFacelets5(p.state, p.scheme), f); // round trip
   }
 });
 
@@ -106,6 +108,23 @@ test('errors: midges (impossible, flipped, parity) and edge pieces (duplicate)',
   const imp = parse5(swap(f, side, yellowT));
   assert.equal(imp.code, 'edgeImpossible');
   assert.equal(imp.params.position, 'UF');
+  assert.equal(formatParseError(imp, de), 'Kante oben-vorne (Mittelstück) (Weiß/Gelb) gibt es auf einem Würfel nicht.');
+  assert.match(formatParseError(imp, en), /top-front \(middle piece\)/);
+  // a wing with impossible colours names the wing
+  const wingSide = WING_FACELETS5[2].find((j) => f[j] !== 'W'); // the F sticker of a UF wing
+  const wimp = parse5(swap(f, wingSide, T_CENTER_FACELETS.filter((j) => f[j] === 'Y')[1]));
+  assert.equal(wimp.code, 'edgeImpossible');
+  assert.equal(wimp.params.position, WING_NAMES5[2]);
+  // corners: impossible colours and duplicates
+  const c0 = CORNER_FACELETS5[0][1]; // white/yellow corner
+  const cimp = parse5(swap(f, c0, T_CENTER_FACELETS.find((j) => f[j] === 'Y')));
+  assert.equal(cimp.code, 'cornerImpossible');
+  assert.match(formatParseError(cimp, de), /^Ecke /);
+  const dup = [...f];
+  CORNER_FACELETS5[1].forEach((j, k) => {
+    dup[j] = f[CORNER_FACELETS5[0][k]];
+  });
+  assert.equal(parse5(dup).code, 'colorCount'); // a duplicated corner changes the colour counts first
   assert.equal(parse5(swap(f, u, side)).code, 'flippedEdge');
   const [w1, w2] = WING_FACELETS5[0];
   assert.equal(parse5(swap(f, w1, w2)).code, 'duplicateEdge4');

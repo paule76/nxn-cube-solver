@@ -62,7 +62,7 @@ daher ist jede Eingabe, die alle Prüfungen besteht, lösbar. Das prüft ein Tes
 - Engine n = 5: 36 Züge; jeder ×4 = Identität; die 6 festen Mittelfelder bleiben bei allen Zügen stehen.
 - 5x5-Modell: für alle 36 Züge und 200 Zufallsfolgen liefert das Modell dieselben Felder wie die Engine;
   Hin-und-Rück für 50 Mischungen; gelöster Würfel in anderer Haltung (andere feste Mitten oben/vorne) → gelöst;
-  je ein Testfall pro Fehlercode (DE- und EN-Meldung), insbesondere `centerCount` (x- und t-Mitte derselben Farbe
+  je ein Testfall pro Fehlercode (DE- und EN-Meldung), insbesondere `centerCount` (x-Mitte der einen und t-Mitte einer anderen Farbe
   vertauscht: Farbanzahl 25 stimmt, trotzdem Fehler).
 - Mischen 5x5: Länge 60, Regeln eingehalten.
 

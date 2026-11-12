@@ -39,10 +39,12 @@ test('5x5: validation messages and "solver coming soon"', async () => {
 });
 
 test('5x5: scramble animates 60 moves (two-layer turn = 41 cubies); 3D matches the net', async () => {
-  const p = await openPage(ctx, { hash: '#5x5', reducedMotion: 'no-preference' });
+  const p = await openPage(ctx, { hash: '#5x5', locale: 'de-DE', reducedMotion: 'no-preference' });
   await p.click('#scramble');
   let maxTurning = 0;
+  const deadline = Date.now() + 60000;
   while (!(await text(p, '#message')).startsWith('Gemischt')) {
+    assert.ok(Date.now() < deadline, 'scramble did not finish within 60 s');
     const turning = await p.$$eval('.cube3d .cubie', (cs) => cs.filter((c) => /rotate[XYZ]\((?!0deg)/.test(c.style.transform)).length);
     maxTurning = Math.max(maxTurning, turning);
     await p.waitForTimeout(25);

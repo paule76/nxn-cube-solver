@@ -148,7 +148,7 @@ export function parse5(facelets) {
   for (let i = 0; i < 12; i++) {
     const colors = MIDGE_FACELETS[i].map((j) => facelets[j]);
     const hit = findPiece(colors.map((c) => sideOf[c]), EDGE_COLORS);
-    if (!hit) return fail('edgeImpossible', { position: EDGE_NAMES[i], colors });
+    if (!hit) return fail('edgeImpossible', { position: EDGE_NAMES[i], colors, midge: true });
     mp.push(hit.piece);
     mo.push(hit.ori);
   }

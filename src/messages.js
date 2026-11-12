@@ -11,7 +11,10 @@ export function formatParseError({ code, params = {} }, t) {
   if (p.colors) p.colors = p.colors.map(colorName).join('/');
   if (p.kind) p.kind = t(`centerKind.${p.kind}`);
   if (p.position) {
-    if (code.startsWith('edge')) p.edge = t(/\d$/.test(p.position) ? `wing.${p.position}` : `edge.${p.position}`);
+    if (code.startsWith('edge')) {
+      p.edge = t(/\d$/.test(p.position) ? `wing.${p.position}` : `edge.${p.position}`);
+      if (p.midge) p.edge = t('edge.midge', { edge: p.edge }); // 5x5: the middle piece of that edge
+    }
     else p.corner = t(`corner.${p.position}`);
   }
   return t(`error.${code}`, p);

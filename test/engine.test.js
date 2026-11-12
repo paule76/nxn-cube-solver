@@ -10,7 +10,7 @@ const COLOR = { U: 'W', R: 'R', F: 'G', D: 'Y', L: 'O', B: 'B' };
 const solvedFacelets = (n) => FACES.flatMap((f) => Array(n * n).fill(COLOR[f]));
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
-for (const n of [2, 3, 4]) {
+for (const n of [2, 3, 4, 5]) {
   test(`n=${n}: stickers unique and on their face`, () => {
     const g = createGeometry(n);
     assert.equal(g.stickers.length, 6 * n * n);
