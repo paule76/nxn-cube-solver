@@ -25,7 +25,7 @@ export function moveToString(move) {
   return move.face + (depthOf(move) === 2 ? 'w' : '') + (move.turns === 2 ? '2' : move.turns === -1 ? "'" : '');
 }
 
-/** Parses e.g. "R U2 F'" into move objects (shared instances from ALL_MOVES). */
+/** Parses e.g. "R U2 Fw'" into move objects (shared instances from ALL_MOVES / WIDE_MOVES). */
 export function parseMoves(str) {
   return str
     .trim()

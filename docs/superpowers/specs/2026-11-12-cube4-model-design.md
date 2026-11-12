@@ -28,7 +28,7 @@ animiert ansehen. Lösen folgt in D2.
 - **Kantenstücke (24):** je zwei pro Kante; ein Kantenstück hat in seinem Platz eine feste Lage
   (nicht kippbar). Jedes der 24 Kantenstücke muss genau einmal vorkommen.
 - **Mittelsteine (24):** je 4 pro Farbe, gleichfarbige austauschbar.
-- Zustand: `{ cp, co, wp, cf }` – Ecken-Permutation/-Orientierung, Kantenstück-Permutation, Mittelfeld-Farben.
+- Zustand: `{ cp, co, wp, centers }` – Ecken-Permutation/-Orientierung, Kantenstück-Permutation, Seiten der 24 Mittelfelder.
 
 ### Prüfung (erste Verletzung gewinnt; Meldungen DE/EN mit Stelle)
 | Code | Bedeutung |
@@ -37,8 +37,7 @@ animiert ansehen. Lösen folgt in D2.
 | `colorCount` | Farbe ≠ 16× (`expected: 16`) |
 | `cornerOrder` / `cornerImpossible` / `duplicateCorner` / `twistedCorner` | wie 2x2 |
 | `edgeImpossible` | Kantenstück mit unmöglichen Farben (`position`, `colors`) |
-| `edgeMirrored` | richtige Farben, falsche Reihenfolge – Hinweis „evtl. gespiegelt eingegeben“ |
-| `duplicateEdge` | Kantenstück doppelt |
+| `duplicateEdge4` | Kantenstück doppelt – mit Hinweis „evtl. eine Seite gespiegelt eingegeben“ (vertauschte Felder eines Kantenstücks ergeben genau sein Partnerstück; ein eigener Code `edgeMirrored` ist daher nicht erkennbar) |
 
 Weitere Bedingungen gibt es nicht: Ecken-Orientierung ist die einzige Invariante (Kantenstücke
 haben feste Lage, gleichfarbige Mitten sind austauschbar), daher ist jede Eingabe, die alle Prüfungen

@@ -1,4 +1,4 @@
-// Which cube size to show: URL hash (#2x2 / #3x3) wins, then the remembered choice, else 3x3.
+// Which cube size to show: URL hash (#2x2 / #3x3 / #4x4) wins, then the remembered choice, else 3x3.
 // Only known sizes are accepted (values come from the URL and localStorage).
 import { PUZZLE_IDS } from './puzzles/index.js';
 

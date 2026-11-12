@@ -54,14 +54,50 @@ test('errors: empty field, colour count', () => {
   assert.equal(de(r), 'Weiß kommt 15× vor (erwartet: 16×).');
 });
 
-test('errors: twisted and mirrored corner', () => {
+test('errors: twisted, mirrored, impossible and duplicate corner (DE/EN)', () => {
   const f = solved();
   const [a, b, c] = CORNER_FACELETS4[0];
   [f[a], f[b], f[c]] = [f[c], f[a], f[b]];
-  assert.equal(parse4(f).code, 'twistedCorner');
+  const twisted = parse4(f);
+  assert.equal(twisted.code, 'twistedCorner');
+  assert.equal(de(twisted), 'Eine Ecke ist verdreht – so ist der Würfel nicht lösbar.');
+  assert.equal(en(twisted), 'A corner is twisted – the cube cannot be solved like this.');
+
   const g = solved();
   [g[b], g[c]] = [g[c], g[b]];
-  assert.equal(parse4(g).code, 'cornerOrder');
+  const mirrored = parse4(g);
+  assert.equal(mirrored.code, 'cornerOrder');
+  assert.match(de(mirrored), /^Ecke oben-vorne-rechts \(.+\): Farben in falscher Reihenfolge/);
+  assert.match(en(mirrored), /^Corner top-front-right \(.+\): colours in the wrong order/);
+
+  // URF shows W/R/Y (white and yellow are opposite); balance the counts on the DFR corner
+  const h = solved();
+  const [dfrD] = CORNER_FACELETS4[4];
+  const lost = h[c]; // G on URF
+  h[c] = 'Y';
+  h[dfrD] = lost; // DFR's yellow becomes green
+  const impossible = parse4(h);
+  assert.equal(impossible.code, 'cornerImpossible');
+  assert.equal(de(impossible), 'Ecke oben-vorne-rechts (Weiß/Rot/Gelb) gibt es auf einem Würfel nicht.');
+  assert.equal(en(impossible), 'Corner top-front-right (White/Red/Yellow) does not exist on a cube.');
+
+  // URF piece also at UFL, DBL piece also at DRB: colour counts stay at 16
+  const dup = parse4(toFacelets4({ ...SOLVED4, cp: [0, 0, 2, 3, 4, 5, 6, 6] }));
+  assert.equal(dup.code, 'duplicateCorner');
+  assert.equal(de(dup), 'Eine Ecke kommt doppelt vor – bitte Eingabe prüfen.');
+  assert.equal(en(dup), 'A corner appears twice – please check your input.');
+});
+
+test('edge piece names say which half is meant', () => {
+  const t = createI18n({ lang: 'de' }).t;
+  const tEn = createI18n({ lang: 'en' }).t;
+  for (const name of WING_NAMES) {
+    assert.match(t(`wing.${name}`), /^[a-z-]+, (oben|unten|links|rechts|vorne|hinten)$/, name);
+    assert.match(tEn(`wing.${name}`), /^[a-z-]+, (top|bottom|left|right|front|back)$/, name);
+  }
+  assert.equal(t('wing.UR1'), 'oben-rechts, hinten');
+  assert.equal(t('wing.UF1'), 'oben-vorne, links');
+  assert.equal(t('wing.FR1'), 'vorne-rechts, unten');
 });
 
 test('errors: swapped stickers of an edge piece read as a duplicate (mirror hint)', () => {
@@ -86,8 +122,8 @@ test('errors: impossible edge piece names its position', () => {
   const r = parse4(f);
   assert.equal(r.code, 'edgeImpossible');
   assert.equal(r.params.position, WING_NAMES[0]);
-  assert.match(de(r), /^Kante .+, Teil [12] \(/);
-  assert.match(en(r), /^Edge .+, part [12] \(/);
+  assert.match(de(r), /^Kante oben-rechts, (hinten|vorne) \(/);
+  assert.match(en(r), /^Edge top-right, (back|front) \(/);
 });
 
 test('centres need no own check: four of each colour follow from the counts', () => {
