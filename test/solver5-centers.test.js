@@ -4,6 +4,7 @@ import { createCenterSolver5, centersSolved5, stageReached5, Z1_MOVES, Z2_MOVES,
 import { AXIS_VIEWS, SIDE_VIEWS } from '../src/solver5/rotate.js';
 import { cube5, toFacelets5, SOLVED5 } from '../src/puzzles/cube5.js';
 import { createMoveSet } from '../src/engine/facelets.js';
+import { timeLimit } from './helpers.js';
 
 const engine = createMoveSet(5);
 function seeded(seed) {
@@ -73,8 +74,8 @@ test('checkpoint: 30 scrambles -> centres solved; avg <= 45 moves; time within s
   const avgMs = times.reduce((a, b) => a + b) / times.length;
   console.log(`# 5x5 centres: avg ${avg.toFixed(1)}, max ${Math.max(...lengths)} moves; avg ${avgMs.toFixed(0)} ms, max ${Math.max(...times).toFixed(0)} ms`);
   assert.ok(avg <= 45, `avg ${avg}`);
-  assert.ok(avgMs <= 2000, `avg ${avgMs} ms`); // target 1 s, measured alone
-  assert.ok(Math.max(...times) <= 10000);
+  assert.ok(avgMs <= timeLimit(2000), `avg ${avgMs} ms`); // target 1 s, measured alone
+  assert.ok(Math.max(...times) <= timeLimit(10000));
 });
 
 test('solved cube in any holding needs no centre moves', () => {

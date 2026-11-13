@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter, SCRAMBLE_11, text } from './helpers.js';
+import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter, SCRAMBLE_11, text, timeLimit } from './helpers.js';
 
 const ctx = setup();
 const SOLVED = stateAfter('');
@@ -12,7 +12,7 @@ test('autoplay reaches the end; editing during autoplay stops it', async () => {
   await p.selectOption('#tempo', 'schnell');
   await p.click('#play');
   assert.equal(await text(p, '#play'), '⏸ Pause');
-  await p.waitForFunction(() => document.getElementById('step-text').textContent.startsWith('Fertig'), null, { timeout: 12000 });
+  await p.waitForFunction(() => document.getElementById('step-text').textContent.startsWith('Fertig'), null, { timeout: timeLimit(12000) });
   assert.equal(await text(p, '#play'), '▶ Abspielen');
   await p.click('#solve');
   await p.click('#play');
@@ -110,7 +110,7 @@ test('scramble animates, locks inputs and asks before overwriting', async () => 
   await p.click('#scramble');
   await p.waitForTimeout(150);
   assert.ok(await p.$eval('#solve', (e) => e.disabled));
-  await p.waitForFunction(() => document.getElementById('message').textContent.startsWith('Gemischt'), null, { timeout: 12000 });
+  await p.waitForFunction(() => document.getElementById('message').textContent.startsWith('Gemischt'), null, { timeout: timeLimit(12000) });
   const moves = (await text(p, '#message')).split(':')[1].split('–')[0].trim().split(' ');
   assert.equal(moves.length, 12);
   assert.equal(await cubeColors(p), await netColors(p));

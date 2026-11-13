@@ -109,6 +109,8 @@ npx playwright install chromium   # falls noch kein Browser vorhanden
 npm run e2e     # Browser-Tests (eigener kleiner Server, kein Python nötig)
 ```
 
+Auf langsamen Rechnern (z. B. Raspberry Pi) verlängert `CUBE_TIME_FACTOR` alle Zeitgrenzen der Tests um diesen Faktor, etwa `CUBE_TIME_FACTOR=1.5 npm test`; die Grenzen für die Zuganzahl bleiben gleich.
+
 ## Veröffentlichung (GitHub Pages)
 
 `.github/workflows/pages.yml` führt Unit- und Browser-Tests bei jedem Push (auf `main` und `feature/**`) und bei Pull Requests aus und veröffentlicht nur von `main`. Veröffentlicht werden ausschließlich `index.html`, `style.css` und `src/`.

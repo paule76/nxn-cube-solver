@@ -10,6 +10,9 @@ import { SOLVED3, toFacelets3 } from '../src/puzzles/cube3.js';
 import { SOLVED4, toFacelets4 } from '../src/puzzles/cube4.js';
 import { SOLVED5, toFacelets5 } from '../src/puzzles/cube5.js';
 
+/** Solver/scramble wait limits scale with CUBE_TIME_FACTOR, like the unit tests. */
+export { timeLimit } from '../test/helpers.js';
+
 /** Starts server + browser once per test file; returns accessors. */
 export function setup() {
   const ctx = { server: null, browser: null, pages: [] };

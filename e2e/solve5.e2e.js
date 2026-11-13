@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter5, text } from './helpers.js';
+import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter5, text, timeLimit } from './helpers.js';
 
 const ctx = setup();
 const found = () => /^(Lösung gefunden|Solution found): \d+ (Züge|moves)\.$/.test(document.getElementById('message').textContent);
@@ -10,7 +10,7 @@ test('5x5: scramble, solve in phases, play to the end -> solved; 3D matches the 
   const p = await openPage(ctx, { hash: '#5x5' });
   await paint(p, stateAfter5(SCRAMBLE));
   await p.click('#solve');
-  await p.waitForFunction(found, null, { timeout: 60000 });
+  await p.waitForFunction(found, null, { timeout: timeLimit(60000) });
   const titles = await p.$$eval('#moves .phase', (ls) => ls.map((l) => l.textContent));
   assert.deepEqual(titles.filter((x) => x !== 'Parität'), ['Mitten', 'Kanten paaren', 'Wie ein 3x3 lösen']);
   const n = (await p.$$('#moves li.move')).length;
@@ -38,7 +38,7 @@ test('5x5: English phase headings', async () => {
   const p = await openPage(ctx, { hash: '#5x5', locale: 'en-US' });
   await paint(p, stateAfter5("Rw U Fw' D2 Lw2 B"));
   await p.click('#solve');
-  await p.waitForFunction(found, null, { timeout: 60000 });
+  await p.waitForFunction(found, null, { timeout: timeLimit(60000) });
   const titles = await p.$$eval('#moves .phase', (ls) => ls.map((l) => l.textContent));
   assert.ok(titles.includes('Centres') && titles.includes('Pair edges') && titles.includes('Solve like a 3x3'), titles.join());
   assert.match(await text(p, '#step-text'), /^Centres · Step 1 of \d+: /);
@@ -62,7 +62,7 @@ test('5x5: Lösen while the solver is being prepared solves automatically', asyn
   await p.click('#solve');
   assert.equal(await text(p, '#message'), '5x5-Solver wird vorbereitet …');
   release();
-  await p.waitForFunction(found, null, { timeout: 60000 });
+  await p.waitForFunction(found, null, { timeout: timeLimit(60000) });
   assert.ok((await p.$$('#moves li.move')).length > 0);
   await context.close();
 });
