@@ -79,7 +79,9 @@ test('3x3: clicking Lösen twice shows only the latest answer and does not reset
   await p.click('#solve');
   await p.waitForFunction(found, null, { timeout: timeLimit(20000) });
   await p.click('#next');
-  await p.waitForTimeout(1500);
+  // a single step may take ≈ 1.6 s (camera move + half turn at 430 ms per quarter)
+  await p.waitForFunction(() => /^Schritt 2 von/.test(document.getElementById('step-text').textContent), null, { timeout: 3000 });
+  await p.waitForTimeout(300);
   assert.match(await text(p, '#step-text'), /^Schritt 2 von/);
   await closePage(p);
 });

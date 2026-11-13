@@ -29,6 +29,7 @@ Zum Üben erzeugt **Zufällig mischen** eine Mischung und zeigt sie animiert: be
 
 - Ziehen (Maus/Finger) dreht die Ansicht, „Ansicht zurücksetzen“ stellt sie wieder her.
 - Ein **Pfeil** zeigt Seite und Richtung des nächsten Zugs; die Schicht dreht sich animiert (bei „Bewegung reduzieren“ ohne Animation).
+- Bei Einzelschritten (Weiter, Zurück, Pfeiltasten) dauert eine Vierteldrehung 430 ms, beim Abspielen und Mischen 300 ms.
 - Halbe Drehungen (`R2` …) laufen als zwei Vierteldrehungen mit Pause und Zähler „1“ / „2“.
 - Liegt der nächste Zug auf einer verdeckten Seite (D, L, B), dreht sich die Kamera dorthin und danach zurück.
 - Netz und 3D-Würfel heben dasselbe Feld hervor (Maus über Netz-Feld bzw. Klick auf 3D-Sticker).

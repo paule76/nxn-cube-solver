@@ -211,8 +211,9 @@ export function createCube3dView(container, { n = 2, onStickerClick = () => {} }
     /**
      * Animates the layer turn; the app renders the resulting state afterwards.
      * Half turns run as two counted quarter turns with a pause in between.
+     * `turnMs` is the duration of one quarter turn.
      */
-    async showMove(move, direction, { countHalfTurns = true } = {}) {
+    async showMove(move, direction, { countHalfTurns = true, turnMs = TURN_MS } = {}) {
       const my = ++gen;
       const stale = () => gen !== my;
       hint.hidden = true;
@@ -226,17 +227,17 @@ export function createCube3dView(container, { n = 2, onStickerClick = () => {} }
       }
       if (reducedMotion()) return;
       if (move.turns !== 2 || !countHalfTurns) {
-        await turnLayer(layer, axis, target, TURN_MS);
+        await turnLayer(layer, axis, target, turnMs);
         return;
       }
       try {
         showCount(move.face, 1);
-        await turnLayer(layer, axis, target / 2, TURN_MS);
+        await turnLayer(layer, axis, target / 2, turnMs);
         if (stale()) return;
         await wait(HALF_TURN_PAUSE_MS);
         if (stale()) return;
         showCount(move.face, 2);
-        await turnLayer(layer, axis, target, TURN_MS);
+        await turnLayer(layer, axis, target, turnMs);
       } finally {
         if (!stale()) showCount(null);
       }
