@@ -3,7 +3,7 @@ import { createCube3dView } from './views/cube3d-view.js';
 import { moveToString } from './engine/facelets.js';
 import { PUZZLES, PUZZLE_IDS } from './puzzles/index.js';
 import { pickSize, sizeFromHash, SIZE_KEY } from './size.js';
-import { createStepper } from './stepper.js';
+import { createStepper, STEP_TURN_MS } from './stepper.js';
 import { stepText, describeMove, flattenPhases, phaseAt } from './step-text.js';
 import { createPlayer } from './player.js';
 import { keyAction } from './keys.js';
@@ -212,12 +212,12 @@ function withTimeout(promise, ms) {
 
 // --- Navigation and autoplay ------------------------------------------------------
 
-async function goTo(step) {
+async function goTo(step, options) {
   // No disabling of the nav buttons here: that would drop keyboard focus during the
   // animation. The stepper itself ignores navigation while a move is shown.
   const { stepper } = sessionFor(puzzle);
   if (stepper.busy) return;
-  const changed = await stepper.goTo(step);
+  const changed = await stepper.goTo(step, options);
   if (changed) render();
 }
 
@@ -254,7 +254,7 @@ function navigate(action) {
   if (action === 'toggle') return togglePlay();
   player.pause();
   const target = { first: 0, prev: solution.step - 1, next: solution.step + 1, last: solution.moves.length }[action];
-  goTo(target);
+  goTo(target, { turnMs: STEP_TURN_MS }); // single steps turn slower than autoplay
 }
 
 // --- Rendering --------------------------------------------------------------------

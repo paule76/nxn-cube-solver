@@ -4,6 +4,9 @@ import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter, S
 
 const ctx = setup();
 const SOLVED = stateAfter('');
+// Single steps turn in 430 ms per quarter (half turns with camera move ≈ 1.6 s), so wait for the text.
+const waitForStep = (p, k) =>
+  p.waitForFunction((k) => document.getElementById('step-text').textContent.startsWith(`Schritt ${k} `), k, { timeout: 3000 });
 
 test('autoplay reaches the end; editing during autoplay stops it', async () => {
   const p = await openPage(ctx);
@@ -29,11 +32,9 @@ test('keyboard navigation and palette keys', async () => {
   await p.click('#solve');
   await p.evaluate(() => document.activeElement.blur());
   await p.keyboard.press('ArrowRight');
-  await p.waitForTimeout(1200);
-  assert.match(await text(p, '#step-text'), /^Schritt 2/);
+  await waitForStep(p, 2);
   await p.keyboard.press('ArrowLeft');
-  await p.waitForTimeout(1200);
-  assert.match(await text(p, '#step-text'), /^Schritt 1/);
+  await waitForStep(p, 1);
   await p.keyboard.press('End');
   await p.waitForTimeout(100);
   assert.match(await text(p, '#step-text'), /^Fertig/);
@@ -52,9 +53,9 @@ test('focus stays on Weiter; Space steps instead of starting autoplay', async ()
   await p.click('#solve');
   await p.focus('#next');
   await p.keyboard.press('Space');
-  await p.waitForTimeout(1200);
+  await waitForStep(p, 2);
   await p.keyboard.press('Space');
-  await p.waitForTimeout(1200);
+  await waitForStep(p, 3);
   assert.equal(await p.evaluate(() => document.activeElement.id), 'next');
   assert.match(await text(p, '#step-text'), /^Schritt 3/);
   assert.equal(await text(p, '#play'), '▶ Abspielen');

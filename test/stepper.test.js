@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createStepper } from '../src/stepper.js';
+import { createStepper, STEP_TURN_MS } from '../src/stepper.js';
 
 function slowView() {
   const shown = [];
@@ -61,6 +61,32 @@ test('jumps clamp and skip animation', async () => {
   assert.equal(sol.step, 3);
   assert.equal(await stepper.goTo(3), false);
   assert.deepEqual(view.shown, []);
+});
+
+function recordingView() {
+  const options = [];
+  return { options, showMove: async (move, direction, opts) => { options.push(opts); } };
+}
+
+test('single steps animate a quarter turn in 430 ms', () => {
+  assert.equal(STEP_TURN_MS, 430);
+});
+
+test('turnMs is passed through to the view', async () => {
+  const view = recordingView();
+  const sol = makeSolution();
+  const stepper = createStepper(view, () => sol);
+  assert.equal(await stepper.goTo(1, { turnMs: STEP_TURN_MS }), true);
+  assert.equal(await stepper.goTo(0, { turnMs: STEP_TURN_MS }), true);
+  assert.deepEqual(view.options, [{ turnMs: 430 }, { turnMs: 430 }]);
+});
+
+test('without turnMs the view keeps its default duration', async () => {
+  const view = recordingView();
+  const sol = makeSolution();
+  const stepper = createStepper(view, () => sol);
+  assert.equal(await stepper.goTo(1), true);
+  assert.equal(view.options[0].turnMs, undefined);
 });
 
 test('step changed elsewhere during animation is not overwritten', async () => {
