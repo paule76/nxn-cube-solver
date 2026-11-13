@@ -10,6 +10,7 @@ import { pairedCount } from '../src/solver4/edges.js';
 import { centersSolved } from '../src/solver4/centers.js';
 import { createSolver4, mergeMoves } from '../src/solver4/reduce.js';
 import { parseMoves, moveToString } from '../src/engine/facelets.js';
+import { timeLimit } from './helpers.js';
 
 const engine = createMoveSet(4);
 const solved = cube4.solvedFacelets();
@@ -90,5 +91,5 @@ test('50 scrambles: solved, avg <= 90, max <= 120 moves, <= 3 s each', () => {
   console.log(`# 4x4 total: avg ${avg.toFixed(1)}, max ${Math.max(...lengths)} moves; avg ${avgMs.toFixed(0)} ms, max ${Math.max(...times).toFixed(0)} ms; parity in ${parity}/50`);
   assert.ok(avg <= 90, `avg ${avg}`);
   assert.ok(Math.max(...lengths) <= 120);
-  assert.ok(Math.max(...times) <= 3000);
+  assert.ok(Math.max(...times) <= timeLimit(3000));
 });

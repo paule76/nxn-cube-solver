@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter3, text } from './helpers.js';
+import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter3, text, timeLimit } from './helpers.js';
 
 const ctx = setup();
 const found = () => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent);
@@ -10,7 +10,7 @@ const SCRAMBLE = "R U2 F' L D B2 R' U F2 D' L2 B U' R2 F";
 async function warmUp(p) {
   await paint(p, stateAfter3('R U'));
   await p.click('#solve');
-  await p.waitForFunction(found, null, { timeout: 20000 });
+  await p.waitForFunction(found, null, { timeout: timeLimit(20000) });
   await p.click('#reset');
   await p.click('#reset');
 }
@@ -19,7 +19,7 @@ test('3x3: scramble, solve, play to the end -> solved; 3D matches the net', asyn
   const p = await openPage(ctx, { hash: '#3x3' });
   await paint(p, stateAfter3(SCRAMBLE));
   await p.click('#solve');
-  await p.waitForFunction(found, null, { timeout: 20000 });
+  await p.waitForFunction(found, null, { timeout: timeLimit(20000) });
   const n = (await p.$$('#moves li')).length;
   assert.ok(n >= 1 && n <= 24, `moves ${n}`);
   await p.click('#last');
@@ -48,7 +48,7 @@ test('3x3: Lösen while the solver is being prepared solves automatically', asyn
   await p.click('#solve');
   assert.equal(await text(p, '#message'), '3x3-Solver wird vorbereitet …');
   release();
-  await p.waitForFunction(found, null, { timeout: 20000 });
+  await p.waitForFunction(found, null, { timeout: timeLimit(20000) });
   assert.equal((await p.$$('#moves li')).length, 3);
   await context.close();
 });
@@ -60,7 +60,7 @@ test('3x3: the second visit uses the tables from the browser cache', async () =>
     await p.goto(`${ctx.server.url}#3x3`);
     await paint(p, stateAfter3('R U'));
     await p.click('#solve');
-    await p.waitForFunction(found, null, { timeout: 20000 });
+    await p.waitForFunction(found, null, { timeout: timeLimit(20000) });
     const state = await p.getAttribute('html', 'data-solver-tables');
     await p.close();
     return state;
@@ -77,7 +77,7 @@ test('3x3: clicking Lösen twice shows only the latest answer and does not reset
   await paint(p, stateAfter3(SCRAMBLE));
   await p.click('#solve');
   await p.click('#solve');
-  await p.waitForFunction(found, null, { timeout: 20000 });
+  await p.waitForFunction(found, null, { timeout: timeLimit(20000) });
   await p.click('#next');
   await p.waitForTimeout(1500);
   assert.match(await text(p, '#step-text'), /^Schritt 2 von/);

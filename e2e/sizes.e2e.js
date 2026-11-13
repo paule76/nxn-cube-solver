@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter3, text } from './helpers.js';
+import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter3, text, timeLimit } from './helpers.js';
 
 const ctx = setup();
 const SOLVED3 = stateAfter3('');
@@ -65,7 +65,7 @@ test('a solved 3x3 is recognised and a scrambled one is solved', async () => {
   assert.equal(await text(p, '#message'), 'Schon gelöst!');
   await paint(p, stateAfter3("R U F' D2 L B'"));
   await p.click('#solve');
-  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: 15000 });
+  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: timeLimit(15000) });
   await closePage(p);
 });
 
@@ -83,13 +83,13 @@ test('3x3 scramble animates all faces; 3D matches the net', async () => {
   const p = await openPage(ctx, { hash: '#3x3' });
   await p.click('#scramble');
   assert.ok(await p.$eval('.size[data-size="2x2"]', (e) => e.disabled));
-  await p.waitForFunction(() => document.getElementById('message').textContent.startsWith('Gemischt'), null, { timeout: 15000 });
+  await p.waitForFunction(() => document.getElementById('message').textContent.startsWith('Gemischt'), null, { timeout: timeLimit(15000) });
   const moves = (await text(p, '#message')).split(':')[1].split('–')[0].trim().split(' ');
   assert.equal(moves.length, 20);
   assert.equal(await cubeColors(p), await netColors(p));
   assert.notEqual(await netColors(p), SOLVED3);
   await p.click('#solve');
-  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: 15000 });
+  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: timeLimit(15000) });
   await closePage(p);
 });
 

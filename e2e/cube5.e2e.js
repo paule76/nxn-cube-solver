@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter5, text } from './helpers.js';
+import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter5, text, timeLimit } from './helpers.js';
 
 const ctx = setup();
 
@@ -34,7 +34,7 @@ test('5x5: validation messages; a valid cube gets solved', async () => {
   await p.click('#reset');
   await paint(p, stateAfter5("Rw U Fw' D2 Lw2 B"));
   await p.click('#solve');
-  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: 60000 });
+  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: timeLimit(60000) });
   await closePage(p);
 });
 
@@ -42,9 +42,10 @@ test('5x5: scramble animates 60 moves (two-layer turn = 41 cubies); 3D matches t
   const p = await openPage(ctx, { hash: '#5x5', locale: 'de-DE', reducedMotion: 'no-preference' });
   await p.click('#scramble');
   let maxTurning = 0;
-  const deadline = Date.now() + 60000;
+  const limit = timeLimit(60000);
+  const deadline = Date.now() + limit;
   while (!(await text(p, '#message')).startsWith('Gemischt')) {
-    assert.ok(Date.now() < deadline, 'scramble did not finish within 60 s');
+    assert.ok(Date.now() < deadline, `scramble did not finish within ${limit / 1000} s`);
     const turning = await p.$$eval('.cube3d .cubie', (cs) => cs.filter((c) => /rotate[XYZ]\((?!0deg)/.test(c.style.transform)).length);
     maxTurning = Math.max(maxTurning, turning);
     await p.waitForTimeout(25);

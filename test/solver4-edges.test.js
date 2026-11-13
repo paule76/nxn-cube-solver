@@ -4,6 +4,7 @@ import { createCenterSolver, centersSolved } from '../src/solver4/centers.js';
 import { createEdgePairer, pairedCount } from '../src/solver4/edges.js';
 import { cube4 } from '../src/puzzles/cube4.js';
 import { createMoveSet } from '../src/engine/facelets.js';
+import { timeLimit } from './helpers.js';
 
 const engine = createMoveSet(4);
 // fixed random source so the length limit does not flake (mulberry32)
@@ -52,7 +53,7 @@ test('checkpoint: 50 scrambles -> centres solved, all 12 edges paired; length an
   const avgMs = times.reduce((a, b) => a + b) / times.length;
   console.log(`# centres+edges: avg ${avg.toFixed(1)}, max ${Math.max(...lengths)} moves; pairing avg ${avgMs.toFixed(0)} ms, max ${Math.max(...times).toFixed(0)} ms`);
   assert.ok(avg <= 65, `avg ${avg}`);
-  assert.ok(avgMs <= 1000, `avg ${avgMs} ms`);
+  assert.ok(avgMs <= timeLimit(1000), `avg ${avgMs} ms`);
 });
 
 test('pairEdges throws instead of returning an unpaired cube', () => {

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter, stateAfter4, text } from './helpers.js';
+import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter, stateAfter4, text, timeLimit } from './helpers.js';
 
 const ctx = setup();
 const found = () => /^(Lösung gefunden|Solution found): \d+ (Züge|moves)\.$/.test(document.getElementById('message').textContent);
@@ -10,7 +10,7 @@ test('4x4: scramble, solve in phases, play to the end -> solved; 3D matches the 
   const p = await openPage(ctx, { hash: '#4x4' });
   await paint(p, stateAfter4(SCRAMBLE));
   await p.click('#solve');
-  await p.waitForFunction(found, null, { timeout: 30000 });
+  await p.waitForFunction(found, null, { timeout: timeLimit(30000) });
   const titles = await p.$$eval('#moves .phase', (ls) => ls.map((l) => l.textContent));
   assert.deepEqual(titles.filter((x) => x !== 'Parität'), ['Mitten', 'Kanten paaren', 'Wie ein 3x3 lösen']);
   const n = (await p.$$('#moves li.move')).length;
@@ -38,7 +38,7 @@ test('4x4: English phase headings', async () => {
   const p = await openPage(ctx, { hash: '#4x4', locale: 'en-US' });
   await paint(p, stateAfter4("Rw U Fw' D2 Lw2 B"));
   await p.click('#solve');
-  await p.waitForFunction(found, null, { timeout: 30000 });
+  await p.waitForFunction(found, null, { timeout: timeLimit(30000) });
   const titles = await p.$$eval('#moves .phase', (ls) => ls.map((l) => l.textContent));
   assert.ok(titles.includes('Centres') && titles.includes('Pair edges') && titles.includes('Solve like a 3x3'), titles.join());
   assert.match(await text(p, '#step-text'), /^Centres · Step 1 of \d+: /);
@@ -62,7 +62,7 @@ test('4x4: Lösen while the solver is being prepared solves automatically', asyn
   await p.click('#solve');
   assert.equal(await text(p, '#message'), '4x4-Solver wird vorbereitet …');
   release();
-  await p.waitForFunction(found, null, { timeout: 30000 });
+  await p.waitForFunction(found, null, { timeout: timeLimit(30000) });
   assert.ok((await p.$$('#moves li.move')).length > 0);
   await context.close();
 });
@@ -71,7 +71,7 @@ test('2x2 shows no phase headings', async () => {
   const p = await openPage(ctx, { hash: '#2x2' });
   await paint(p, stateAfter("R U F'"));
   await p.click('#solve');
-  await p.waitForFunction(found, null, { timeout: 30000 });
+  await p.waitForFunction(found, null, { timeout: timeLimit(30000) });
   assert.equal((await p.$$('#moves .phase')).length, 0);
   assert.match(await text(p, '#step-text'), /^Schritt 1 von /);
   await closePage(p);

@@ -7,6 +7,7 @@ import { cube5, toFacelets5, SOLVED5 } from '../src/puzzles/cube5.js';
 import { createMoveSet } from '../src/engine/facelets.js';
 import { EDGE_PARITY } from '../src/solver5/edges.js';
 import { createSolver5, toReduced3from5 } from '../src/solver5/reduce.js';
+import { timeLimit } from './helpers.js';
 
 const engine = createMoveSet(5);
 const solved = cube5.solvedFacelets();
@@ -63,6 +64,6 @@ test('30 scrambles: solved, avg <= 140, max <= 180 moves; time within safety lim
   console.log(`# 5x5 total: avg ${avg.toFixed(1)}, max ${Math.max(...lengths)} moves; avg ${avgMs.toFixed(0)} ms, max ${Math.max(...times).toFixed(0)} ms`);
   assert.ok(avg <= 140, `avg ${avg}`);
   assert.ok(Math.max(...lengths) <= 180);
-  assert.ok(avgMs <= 3000, `avg ${avgMs} ms`);
-  assert.ok(Math.max(...times) <= 10000);
+  assert.ok(avgMs <= timeLimit(3000), `avg ${avgMs} ms`);
+  assert.ok(Math.max(...times) <= timeLimit(10000));
 });

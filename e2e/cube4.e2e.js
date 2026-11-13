@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter4, text } from './helpers.js';
+import { setup, openPage, closePage, paint, netColors, cubeColors, stateAfter4, text, timeLimit } from './helpers.js';
 
 const ctx = setup();
 
@@ -34,7 +34,7 @@ test('4x4: validation messages', async () => {
   await p.click('#reset');
   await paint(p, stateAfter4("Rw U Fw' D2 Lw2 B"));
   await p.click('#solve');
-  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: 30000 });
+  await p.waitForFunction(() => /^Lösung gefunden: \d+ Züge?\.$/.test(document.getElementById('message').textContent), null, { timeout: timeLimit(30000) });
   await closePage(p);
 });
 

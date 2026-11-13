@@ -4,6 +4,7 @@ import * as C from '../src/solver3/coords.js';
 import { buildTables, exportTables, importTables, prune, PHASE1_MOVES, PHASE2_MOVES } from '../src/solver3/tables.js';
 import { SOLVED3, applyMove3, applyMoves3 } from '../src/puzzles/cube3.js';
 import { moveToString } from '../src/engine/facelets.js';
+import { timeLimit } from './helpers.js';
 
 let T;
 let buildMs;
@@ -23,7 +24,7 @@ test('move sets', () => {
 });
 
 test('build time', () => {
-  assert.ok(buildMs < 6000, `${buildMs} ms`);
+  assert.ok(buildMs < timeLimit(6000), `${buildMs} ms`);
 });
 
 test('phase-1 move tables match the cubie model', () => {

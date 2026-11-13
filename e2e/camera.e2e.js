@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { setup, openPage, closePage, netColors, cubeColors } from './helpers.js';
+import { setup, openPage, closePage, netColors, cubeColors, timeLimit } from './helpers.js';
 
 const ctx = setup();
 const DEFAULT = 'rotateX(-25deg) rotateY(-35deg)';
@@ -34,7 +34,7 @@ test('a camera the user dragged is not overridden for visible faces', async () =
   const dragged = await cam(p);
   assert.notEqual(dragged, DEFAULT);
   await p.click('#scramble'); // 2x2 only turns U/R/F, still visible from a slightly dragged view
-  await p.waitForFunction(() => document.getElementById('message').textContent.startsWith('Gemischt'), null, { timeout: 12000 });
+  await p.waitForFunction(() => document.getElementById('message').textContent.startsWith('Gemischt'), null, { timeout: timeLimit(12000) });
   await p.waitForTimeout(400);
   assert.equal(await cam(p), dragged);
   await closePage(p);

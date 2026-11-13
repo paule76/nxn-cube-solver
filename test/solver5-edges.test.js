@@ -4,6 +4,7 @@ import { createCenterSolver5, centersSolved5 } from '../src/solver5/centers.js';
 import { createEdgePairer5, pairedWings, EDGE_PARITY } from '../src/solver5/edges.js';
 import { cube5, parse5 } from '../src/puzzles/cube5.js';
 import { createMoveSet } from '../src/engine/facelets.js';
+import { timeLimit } from './helpers.js';
 
 const engine = createMoveSet(5);
 function seeded(seed) {
@@ -51,7 +52,7 @@ test('checkpoint: 20 scrambles -> all 24 wings paired, centres kept; centres+edg
   const avgMs = times.reduce((a, b) => a + b) / times.length;
   console.log(`# 5x5 centres+edges: avg ${avg.toFixed(1)}, max ${Math.max(...lengths)}; pairing avg ${avgMs.toFixed(0)} ms, max ${Math.max(...times).toFixed(0)} ms`);
   assert.ok(avg <= 120, `avg ${avg}`);
-  assert.ok(avgMs <= 1000);
+  assert.ok(avgMs <= timeLimit(1000));
 });
 
 test('pairEdges throws instead of returning an unpaired cube', () => {
